@@ -47,6 +47,7 @@ streamlit run src/web/app.py
 ├── AGENTS.md                     # AI Agent 开发手册（Harness 规则）
 ├── ARCHITECTURE.md               # 系统架构图 + 数据流说明
 ├── README.md                     # 本文件
+├── LICENSE                       # MIT（含 ultralytics AGPL-3.0 等第三方声明）
 ├── requirements.txt              # 依赖声明
 ├── yolo11n.pt / yolo11s.pt       # 预训练权重（复现训练用，推理无需）
 ├── src/
@@ -177,6 +178,8 @@ yolo11s 在精度与速度间最均衡，为推荐方案。exp5 因训练中断�
 
 ## 许可与数据来源
 
+本项目原创代码以 **MIT License** 授权，详见 [LICENSE](LICENSE)（含第三方组件声明）。
+
 - 数据集来自 [Roboflow Universe](https://universe.roboflow.com/)（CC BY 4.0），**不随本仓库分发**，详见 `docs/references/reference-list.md`。
-- 代码基于 [ultralytics](https://github.com/ultralytics/ultralytics)（AGPL-3.0）构建。
+- 代码基于 [ultralytics](https://github.com/ultralytics/ultralytics)（**AGPL-3.0**）构建——若将本项目作为网络服务对外提供，需按 AGPL-3.0 提供完整源码，或向 Ultralytics 申请商业授权。
 - 本项目的使用须遵守 `docs/SECURITY.md` 中的数据边界：**禁止上传包含学生面部可识别信息、身份证件等隐私图片**。
