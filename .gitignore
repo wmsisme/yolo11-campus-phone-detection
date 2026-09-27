@@ -1,0 +1,78 @@
+# ============================================================
+# 校园手机使用检测系统 — Git 忽略规则
+#
+# 原则：数据集、训练中间产物、预训练权重不入库；
+#       experiments/ 只保留推荐模型权重（nano/small 两档）。
+#
+# 注意：带前导 "/" 的规则只锚定仓库根目录，不加会匹配任意层级；
+#       行的顺序有意义，后面的规则覆盖前面的（! 为取消忽略）。
+# ============================================================
+
+# ---------- 数据集（按约定不入库，见 README「准备数据集」）----------
+/data_source/
+/data/
+*.cache
+
+# ---------- ultralytics 训练产物（可由 experiments/ 中的配置复现）----------
+/runs/
+
+# ---------- 预训练权重：保留 n/s（复现训练必需），其余忽略 ----------
+/*.pt
+!/yolo11n.pt
+!/yolo11s.pt
+*.onnx
+*.engine
+*.torchscript
+
+# ---------- experiments/：只保留推荐模型权重 ----------
+# 之前 3 组「原始 141 张数据集」实验的权重精度仅 mAP@50≈0.25~0.30，无部署价值；
+# exp5 (yolo11m) 仅训练 1 轮即中断，且单文件 153.7MB 超过 GitHub 100MB 限制；
+# exp3/last.pt 是最新一轮非最佳权重，同样无部署价值。
+# 因此只保留 Web Demo 实际会加载的 exp3(best) 与 exp4(best)。
+/experiments/exp0_yolo11n_baseline/best.pt
+/experiments/exp1_yolo11s_augment/best.pt
+/experiments/exp2_yolo11m_hyperparams/best.pt
+/experiments/exp3_reorganized_yolo11n/last.pt
+/experiments/exp5_reorganized_yolo11m/best.pt
+/experiments/**/last.pt
+
+# ---------- Python ----------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# ---------- 虚拟环境 ----------
+.venv/
+/venv/
+env/
+ENV/
+
+# ---------- 测试与缓存 ----------
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# ---------- 编辑器 / 系统 ----------
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---------- 旧技术路线残骸（CLIP + Faiss 检索时代，已废弃）----------
+/data/features_*.npy
+/data/index_*.faiss
+/data/paths_*.json
+
+# ---------- 本地临时目录 ----------
+/tmp/
+/_archive/

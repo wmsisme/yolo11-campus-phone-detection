@@ -1,0 +1,9 @@
+{
+  "mAP50": 0.29281,
+  "mAP50-95": 0.16214,
+  "precision": 0.57035,
+  "recall": 0.26054,
+  "experiment": "exp1_yolo11s_augment",
+  "model_variant": "yolo11s",
+  "epochs": 100
+}

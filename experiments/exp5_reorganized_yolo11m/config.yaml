@@ -1,0 +1,9 @@
+batch: 16
+data_yaml: D:\本科\作业\视觉ai\期末作业\源代码\data_source\reorganized_phone_dataset_yolo\reorganized_dataset\data.yaml
+device: '0'
+epochs: 30
+experiment: exp5_reorganized_yolo11m
+imgsz: 640
+lr0: 0.01
+model: yolo11m
+timestamp: '2026-06-12T11:38:25.222548'

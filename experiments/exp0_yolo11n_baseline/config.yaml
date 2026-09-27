@@ -1,0 +1,9 @@
+batch: 16
+data_yaml: D:\本科\作业\视觉ai\期末作业\data\phone_detection\data.yaml
+device: '0'
+epochs: 100
+experiment: exp0_yolo11n_baseline
+imgsz: 640
+lr0: 0.01
+model: yolo11n
+timestamp: '2026-06-06T18:23:22.556308'
