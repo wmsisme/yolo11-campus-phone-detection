@@ -89,4 +89,12 @@
 
 ---
 
+### 错误 #011 - 2026-09-27
+- **现象**：运行 Web Demo 时 Streamlit 持续输出弃用告警 `Please replace use_container_width with width. use_container_width will be removed after 2025-12-31.`
+- **原因**：`src/web/app.py` 有 7 处使用旧 API `use_container_width=True`（`st.button` ×2、`st.image` ×3、`st.dataframe` ×1、`st.download_button` ×1），该参数已被官方弃用并有明确移除时限。
+- **建议修复**：全部替换为 `width="stretch"`；因新 API 需较新版本，`requirements.txt` 中 `streamlit` 下限由 `>=1.28.0` 提升为 `>=1.49.0`。已修复并复测（全路径 UI 验收 4/4 场景通过，告警消失）。
+- **状态**：已修复
+
+---
+
 > 后续训练和测试中发现的错误将继续追加到此文件。

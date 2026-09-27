@@ -124,7 +124,7 @@ def main():
         # 加载模型按钮
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("🔄 加载模型", use_container_width=True):
+            if st.button("🔄 加载模型", width="stretch"):
                 if (model_variant != st.session_state.model_variant or
                         not st.session_state.model_loaded):
                     try:
@@ -150,7 +150,7 @@ def main():
 
         # 开始检测按钮
         st.divider()
-        detect_btn = st.button("🚀 开始检测", type="primary", use_container_width=True)
+        detect_btn = st.button("🚀 开始检测", type="primary", width="stretch")
 
         # 显示模型状态
         if st.session_state.model_loaded:
@@ -209,7 +209,7 @@ def main():
 
             # 显示图片
             if st.session_state.annotated_image is not None:
-                st.image(st.session_state.annotated_image, use_container_width=True)
+                st.image(st.session_state.annotated_image, width="stretch")
                 if st.session_state.get("is_trained", False):
                     st.caption(f"检测到 {len(st.session_state.detections)} 个目标")
 
@@ -227,10 +227,10 @@ def main():
                         "（类别为 COCO 80 类，与手机检测无关）"
                     )
             elif uploaded_file is not None and detect_btn:
-                st.image(pil_image, use_container_width=True)
+                st.image(pil_image, width="stretch")
                 st.info("未检测到任何目标。请尝试降低置信度阈值或更换图片。")
             elif uploaded_file is not None:
-                st.image(pil_image, use_container_width=True)
+                st.image(pil_image, width="stretch")
                 st.caption("点击「开始检测」进行分析")
         else:
             st.info("👈 请在左侧上传校园场景图片")
@@ -285,7 +285,7 @@ def main():
                         "面积": f"{det['area']:.0f}px²",
                     })
                 df = pd.DataFrame(rows)
-                st.dataframe(df, use_container_width=True, hide_index=True)
+                st.dataframe(df, width="stretch", hide_index=True)
 
                 # 导出报告按钮
                 st.divider()
@@ -295,7 +295,7 @@ def main():
                     data=md_report,
                     file_name=f"检测报告_{uploaded_file.name.rsplit('.', 1)[0]}.md",
                     mime="text/markdown",
-                    use_container_width=True,
+                    width="stretch",
                 )
 
         elif uploaded_file is not None and detect_btn:
