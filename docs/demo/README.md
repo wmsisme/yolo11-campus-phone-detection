@@ -84,7 +84,7 @@ python -m pytest tests/test_webdemo.py tests/test_onnx_parity.py -v
 ## 5. 重新生成产物
 
 ```bash
-# 1) 从训练权重导出 ONNX（imgsz=640 / opset=13 / 关闭内置 NMS）
+# 1) 从训练权重导出 ONNX（imgsz=640 / opset=13 / 关闭内置 NMS；脚本默认值即为此，无需额外传参）
 python -m src.models.export_onnx \
     --weights experiments/exp3_reorganized_yolo11n/best.pt \
     --out docs/demo/model/phone-yolo11n.onnx

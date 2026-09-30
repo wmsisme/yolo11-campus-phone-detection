@@ -18,10 +18,15 @@
 
 | 指标 | 目标值 | 当前值 |
 |------|--------|--------|
-| 冒烟测试通过 | ≥ 5/5 pass | ✅ **10 passed, 1 skipped**（0 failed；1 skipped 是需联网下载权重的 `test_load_yolo11n`） |
+| 冒烟测试通过 | ≥ 5/5 pass | ✅ **17 passed, 1 skipped**（0 failed；1 skipped 是 `test_load_yolo11n`，被硬编码 skip） |
 | 代码可运行 | 是 | 是 (所有模块独立可执行) |
 | Harness 文档齐全 | 11/11 文件 | 已完成 |
 | 代码无硬编码路径 | 是 | 是 (`get_project_root()` + `prepare_*` 每次刷新 `data.yaml` 绝对路径) |
+
+> 仓库按约定不含数据集（`.gitignore` 排除 `data_source/`、`data/`、`runs/`）。
+> **本地全量实测（2026-10-01）**：`python -m pytest tests/ -v` → 17 passed, 1 skipped / 16.2s，
+> 其中 ONNX 一致性（3 项）与静态 Demo 端到端（3 项）**均真实执行而非跳过**（Node + Edge + 数据集 + ONNX 就位）。
+> 需要干净环境（无数据集/无 Edge）时，这些用例会按各自的 skipif 守卫跳过，套件仍整体通过。
 
 > 历史问题已修复：`tests/test_smoke.py` 曾把旧机器路径写进断言
 > （`assert root.name == "期末作业"`），项目迁移后必然失败；现已改为校验目录契约，
@@ -42,7 +47,7 @@
 
 | 指标 | 状态 |
 |------|------|
-| 技术债记录 ≥ 5 条 | 5 条已记录 |
+| 技术债记录 ≥ 5 条 | **14 条已记录**（#001~#014，含静态 Demo 的 int8/中文路径/自检鉴别力三项） |
 | 实验记录完整 | 6 组实验全部完成并记录 |
 | Harness 文档一致性 | 11 个文件全部与 YOLO11 项目一致 |
 | AI Agent 使用过程记录 | 已在 final-report.md 第 8 节详细记录 |

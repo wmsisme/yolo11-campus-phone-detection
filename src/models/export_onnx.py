@@ -2,11 +2,13 @@
 
 为什么需要它：`docs/demo/` 里的静态 Demo 不再依赖 Python 服务端，而是用
 onnxruntime-web 在浏览器里直接跑模型。这就要求权重以 ONNX 格式随仓库分发，
-且导出参数固定（imgsz / opset / NMS 关闭），否则前后端口径会不一致。
+且导出参数固定（imgsz=640 / opset=13 / NMS 关闭），否则前后端口径会不一致。
+这三个值与 `docs/demo/model/*.onnx` 的既有产物一致（可用 `onnx.load()` 核对
+`opset_import` 与输入输出形状），改动前请先确认前端契约。
 
 用法::
 
-    # 导出 fp32（与 PyTorch 结果一致，体积约 15 MB）
+    # 导出 fp32（与 PyTorch 结果一致，yolo11n 实测约 10.1 MB）
     python -m src.models.export_onnx \
         --weights experiments/exp3_reorganized_yolo11n/best.pt \
         --out docs/demo/model/phone-yolo11n.onnx
@@ -232,7 +234,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--weights", type=Path, required=True, help="训练权重 best.pt")
     ap.add_argument("--out", type=Path, required=True, help="输出 onnx 路径")
     ap.add_argument("--imgsz", type=int, default=640)
-    ap.add_argument("--opset", type=int, default=12)
+    # opset 13 与仓库已发布产物的契约一致（见模块 docstring）。
+    # 曾误留 12，导致照 README 抄命令会导出**与线上不同**的模型。
+    ap.add_argument("--opset", type=int, default=13)
     ap.add_argument("--int8", action="store_true", help="同时产出静态量化 int8 版本（需校准图）")
     ap.add_argument(
         "--calib-dir",

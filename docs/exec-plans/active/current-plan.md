@@ -50,7 +50,7 @@
 
 - [x] 复制优质模型权重到 `experiments/`（exp3 yolo11n、exp4 yolo11s 已入库；exp5 因 1 轮废权重不入库）
 - [ ] 启动 Web Demo：`streamlit run src/web/app.py`（仓库开箱即用，无需先训练）
-- [x] 运行冒烟测试：`python -m pytest tests/ -v` → **10 passed, 1 skipped**
+- [x] 运行全量测试：`python -m pytest tests/ -v` → **17 passed, 1 skipped**（含 ONNX 一致性与静态 Demo 端到端）
 - [ ] 截取 Web Demo 运行截图，插入 final-report
 - [ ] 录制演示视频（可选加分项）
 - [ ] 提交压缩包 + 成绩记录表
@@ -75,7 +75,7 @@
 （`main` 分支 `/docs` 目录）→ <https://wmsisme.github.io/yolo11-campus-phone-detection/demo/>。
 动机是原来只有一个必须跑 Python 的 Streamlit 版，面试/分享场景下"打不开"。
 
-- [x] ONNX 导出链路 `src/models/export_onnx.py`（imgsz=640 / opset=13 / 关闭内置 NMS）
+- [x] ONNX 导出链路 `src/models/export_onnx.py`（imgsz=640 / opset=13 / 关闭内置 NMS；`--opset` 默认值已与产物对齐）
 - [x] Python 参考实现 `src/models/onnx_infer.py`（letterbox → 解码 → 逐类别 NMS，作为前后端口径的规范）
 - [x] 前端 `docs/demo/`：三栏界面（上传 / 画布 / 报告）、参数可调（置信度、IoU、类别过滤）、
       Markdown 报告导出、示例图一键体验、onnxruntime-web **本地化**（不依赖 CDN）
