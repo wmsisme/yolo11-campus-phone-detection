@@ -69,6 +69,25 @@
 
 同时：新增 `.gitignore`（锚定根目录规则，数据集/训练产物/预训练权重按约定不入库）、重写 `README.md`（含 clone→run 快速开始与真实实验数据）、同步 `QUALITY_SCORE.md` / `RELIABILITY.md` / `references`。
 
+## 2026-09-30 静态在线 Demo（浏览器内推理）
+
+给项目补上**公网可打开、点开就能用**的形态：`docs/demo/` 纯前端 Demo，发布在 GitHub Pages
+（`main` 分支 `/docs` 目录）→ <https://wmsisme.github.io/yolo11-campus-phone-detection/demo/>。
+动机是原来只有一个必须跑 Python 的 Streamlit 版，面试/分享场景下"打不开"。
+
+- [x] ONNX 导出链路 `src/models/export_onnx.py`（imgsz=640 / opset=13 / 关闭内置 NMS）
+- [x] Python 参考实现 `src/models/onnx_infer.py`（letterbox → 解码 → 逐类别 NMS，作为前后端口径的规范）
+- [x] 前端 `docs/demo/`：三栏界面（上传 / 画布 / 报告）、参数可调（置信度、IoU、类别过滤）、
+      Markdown 报告导出、示例图一键体验、onnxruntime-web **本地化**（不依赖 CDN）
+- [x] 自检机制：`?selftest=1` 用固定图片跑浏览器推理，与 Python 基准逐框比对（IoU ≥ 0.85）
+- [x] 自动化：`tests/test_onnx_parity.py`（ONNX ↔ PyTorch 逐框一致）、
+      `tests/test_webdemo.py`（无头 Edge 真跑页面 + CDP 探针 `tests/headless_probe.mjs`）
+- [x] 用三次**故意破坏**证明自检有鉴别力（x 轴灰边 / y 轴灰边 / 类别错位 → 全部被抓到）
+- [x] 技术债 #012~#014 记录：int8 量化不可用、`cv2.imread` 中文路径静默失败、示例图长宽比覆盖不足
+
+**结论性取舍**：网页版只发布 **yolo11n fp32（10.1 MB）**——yolo11s 的 ONNX 有 36 MB（首屏代价过大），
+int8 四种量化配置都会打坏分类头（检测数归零）。详见 `tech-debt-tracker.md` 错误 #012。
+
 ## 给下个 Agent 的提醒
 
 - 6 组实验全部完成，重组数据集实验（exp3/exp4）结果优秀

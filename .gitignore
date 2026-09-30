@@ -76,3 +76,8 @@ desktop.ini
 # ---------- 本地临时目录 ----------
 /tmp/
 /_archive/
+
+# ---------- docs/demo/：静态 Demo 必须把 ONNX 模型一起发布 ----------
+# 上面的 `*.onnx` 是为训练产物准备的；但纯前端 Demo 要在浏览器里下载模型文件，
+# 漏了这条反选规则会导致 GitHub Pages 上模型 404、页面打不开（实测 check-ignore 抓到）。
+!/docs/demo/model/*.onnx

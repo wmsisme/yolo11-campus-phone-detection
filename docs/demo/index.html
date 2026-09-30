@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>校园手机使用检测 · 浏览器内实时推理</title>
+<meta name="description" content="基于 YOLO11 的校园手机使用检测系统在线 Demo：图片在浏览器本地推理，不上传服务器。检测「使用手机的人」与「手机」两类目标。">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <div class="brand">
+      <span class="logo">📱</span>
+      <div>
+        <h1>校园手机使用检测系统</h1>
+        <p class="sub">YOLO11 · 浏览器内实时推理 · 图片不上传服务器</p>
+      </div>
+    </div>
+    <nav class="links">
+      <a href="https://github.com/wmsisme/yolo11-campus-phone-detection" target="_blank" rel="noopener">GitHub 仓库</a>
+      <a href="https://github.com/wmsisme/yolo11-campus-phone-detection#readme" target="_blank" rel="noopener">实验与指标</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap layout">
+
+  <!-- ============ 左栏：输入与控制 ============ -->
+  <section class="panel">
+    <h2 class="panel-title">① 选择图片</h2>
+
+    <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="上传图片">
+      <div class="dz-icon">⬆️</div>
+      <div class="dz-main">点击选择，或把图片拖到这里</div>
+      <div class="dz-hint">支持 JPG / PNG · 建议校园场景 · 图片只在本地处理</div>
+      <input id="fileInput" type="file" accept="image/*" hidden>
+    </div>
+
+    <div class="samples">
+      <div class="samples-head">示例图片（点击直接体验）</div>
+      <div id="sampleList" class="sample-grid"></div>
+    </div>
+
+    <h2 class="panel-title">② 检测参数</h2>
+    <div class="ctrl">
+      <label for="confRange">置信度阈值 <b id="confVal">0.25</b></label>
+      <input id="confRange" type="range" min="0.05" max="0.95" step="0.05" value="0.25">
+      <p class="ctrl-hint">调高 → 只保留更确定的框；调低 → 召回更多、误检可能变多</p>
+    </div>
+    <div class="ctrl">
+      <label for="iouRange">NMS IoU 阈值 <b id="iouVal">0.70</b></label>
+      <input id="iouRange" type="range" min="0.3" max="0.9" step="0.05" value="0.7">
+      <p class="ctrl-hint">控制重叠框的合并强度（与训练评估口径一致）</p>
+    </div>
+    <div class="ctrl">
+      <label>类别过滤</label>
+      <div class="checks">
+        <label class="chip"><input type="checkbox" id="cls0" checked> 使用手机的人</label>
+        <label class="chip"><input type="checkbox" id="cls1" checked> 手机</label>
+      </div>
+    </div>
+
+    <h2 class="panel-title">③ 模型</h2>
+    <div id="modelList" class="models"></div>
+    <p class="ctrl-hint" id="modelHint">首次选择会在后台下载模型，之后浏览器会缓存。</p>
+  </section>
+
+  <!-- ============ 中栏：画布 ============ -->
+  <section class="panel canvas-panel">
+    <h2 class="panel-title">④ 检测结果</h2>
+
+    <div id="stage" class="stage">
+      <div id="emptyState" class="empty-state">
+        <div class="empty-icon">🖼️</div>
+        <p>还没有图片。左侧上传一张，或点一张示例图。</p>
+      </div>
+      <canvas id="canvas"></canvas>
+      <div id="busy" class="busy hidden">
+        <div class="spinner"></div>
+        <div id="busyText" class="busy-text">正在加载模型…</div>
+        <div class="progress"><div id="progressBar" class="progress-bar"></div></div>
+      </div>
+    </div>
+
+    <div id="stageMeta" class="stage-meta"></div>
+    <div class="actions">
+      <button id="btnMarkdown" class="btn" disabled>导出 Markdown 报告</button>
+      <button id="btnReset" class="btn ghost" disabled>清除</button>
+    </div>
+  </section>
+
+  <!-- ============ 右栏：统计报告 ============ -->
+  <section class="panel">
+    <h2 class="panel-title">⑤ 检测报告</h2>
+
+    <div id="report" class="report">
+      <p class="muted">检测后这里会显示类别计数、置信度分布与每个框的明细。</p>
+    </div>
+
+    <details class="about" open>
+      <summary>这个 Demo 是怎么跑的？</summary>
+      <ul>
+        <li><b>纯前端推理</b>：模型导出为 ONNX，用 onnxruntime-web（WebAssembly）在你的浏览器里执行，<b>没有后端、不需要 API Key</b>。</li>
+        <li><b>与 Python 端同口径</b>：letterbox、解码、按类别 NMS 与 <code>src/models/onnx_infer.py</code> 一致，测试用同一批图片逐框比对（IoU ≥ 0.9）。</li>
+        <li><b>模型</b>：YOLO11 在「Smart School v5 + 4 个校园数据集重组（22,879 张）」上训练，验证集 mAP@50 <b>0.729</b>（yolo11n）/ 0.726（yolo11s）。</li>
+        <li><b>平台版</b>：同一套模型的 Python/Streamlit 版支持批量与报告导出，见仓库 <code>src/web/app.py</code>。</li>
+      </ul>
+    </details>
+
+    <details class="about">
+      <summary>数据与许可</summary>
+      <ul>
+        <li>数据集来自 <a href="https://universe.roboflow.com/" target="_blank" rel="noopener">Roboflow Universe</a>（CC BY 4.0），本仓库不分发原始数据集。</li>
+        <li>代码 MIT，模型由 <a href="https://github.com/ultralytics/ultralytics" target="_blank" rel="noopener">ultralytics</a>（AGPL-3.0）训练；本页源码随仓库公开。</li>
+        <li>请勿上传含可识别面部信息、证件等隐私照片。</li>
+      </ul>
+    </details>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="wrap footer-inner">
+    <span>© 2026 wmsisme · 校园手机使用检测系统</span>
+    <span id="runtimeInfo" class="muted"></span>
+  </div>
+</footer>
+
+<!-- 自检结果容器：仅 ?selftest=1 时填充，供自动化测试断言 -->
+<div id="selftest-result" hidden></div>
+
+<script src="vendor/ort/ort.wasm.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

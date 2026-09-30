@@ -4,12 +4,33 @@ import json
 import logging
 import time
 import yaml
+import numpy as np
+import cv2
 from pathlib import Path
 
 
 def get_project_root() -> Path:
     """返回项目根目录"""
     return Path(__file__).resolve().parent.parent.parent
+
+
+def imread_unicode(path, flags: int = cv2.IMREAD_COLOR):
+    """读取图片，**支持中文/非 ASCII 路径**。
+
+    为什么不用 `cv2.imread`：Windows 下 OpenCV 走的是窄字符路径，遇到含中文的目录
+    （例如本机的 `D:\\code_item\\手机检测\\...`）会直接返回 None，报
+    `can't open/read file: check file path/integrity`，而同一路径 `Path.exists()` 为 True
+    —— 特别容易被误判成"数据集缺失"。改用 `np.fromfile` + `cv2.imdecode` 绕开该限制。
+
+    用法与 `cv2.imread` 一致，失败同样返回 None。
+    """
+    try:
+        buf = np.fromfile(str(path), dtype=np.uint8)
+    except OSError:
+        return None
+    if buf.size == 0:
+        return None
+    return cv2.imdecode(buf, flags)
 
 
 def setup_logger(name: str = "phone_detection", level: int = logging.INFO) -> logging.Logger:

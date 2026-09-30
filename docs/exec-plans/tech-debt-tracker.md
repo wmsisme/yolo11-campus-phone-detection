@@ -97,4 +97,29 @@
 
 ---
 
+### 错误 #012 - 2026-09-30
+- **现象**：为静态 Demo 压缩模型体积做 int8 量化，量化后的模型**能加载、能推理、不报错，但结果全错**——框回归正常，类别分数恒为 0.000，检测数从 N 变成 0。
+- **原因**：YOLO11 的检测头（分类分支 + sigmoid + Concat）对激活量化极不友好。实测四种配置全部失效：`QuantFormat.QDQ/QOperator` × `per_channel=True/False`；且 `quantize_dynamic` 另一条路直接产 `ConvInteger`，ONNXRuntime 的 CPU EP 与 WASM EP 都没有该算子实现（`NOT_IMPLEMENTED`）。ONNX Runtime 官方对此类模型有明确提示：`Please consider to run pre-processing before quantization`（需要一个带预处理层的导出模型）。
+- **建议修复**：**放弃 int8，静态 Demo 只发布 fp32 ONNX**（yolo11n 10.1 MB，对比：yolo11s 36.2 MB 也偏大，故网页版只放 nano）。`src/models/export_onnx.py` 的 `--int8` 现在带**自检**：量化后实跑几张小图比对检测数与类别分数上限，不合格就直接删掉产物并以返回码 3 退出——不允许"能加载但结果是错的"模型留在仓库里。
+- **状态**：已知限制（量化在本模型上不可行，已用自检兜住）
+
+---
+
+### 错误 #013 - 2026-09-30
+- **现象**：`cv2.imread()` 在含中文的路径上静默返回 `None`（`D:\code_item\手机检测\...`），报 `can't open/read file: check file path/integrity`，而 `Path.exists()` 为 True —— 很容易被误判成"数据集缺失/图片损坏"。
+- **原因**：Windows 下 OpenCV 的 `imread` 走窄字符路径并且**不认 UTF-8 字节**。有意思的是：只要 `import ultralytics`，它会给 `cv2.imread` 打上 Unicode 路径补丁，于是"先 import ultralytics 的脚本能读、单独用 cv2 的脚本读不到"，排查时极易被误导。
+- **建议修复**：新增 `src/utils/helpers.imread_unicode()`（`np.fromfile` + `cv2.imdecode`），新代码统一走它；导出脚本与示例图生成脚本已改用。
+- **状态**：已修复
+
+---
+
+### 错误 #014 - 2026-09-30
+- **现象**：静态 Demo 的浏览器自检一开始"全绿"，但把 `letterbox` 的灰边补偿 `- pad[0]` **故意删掉后自检依然 PASS** —— 也就是说那条断言当时没有鉴别力。
+- **原因**：最初几张示例图全是 640×640 方形图（letterbox 不产生灰边，`pad` 恒为 0），那段代码根本没被执行；补了一张 640×400 横图后仍 PASS，因为**横图只让 `pad[1] ≠ 0`，被破坏的是 x 轴**。
+- **建议修复**：示例图必须同时包含**横图（覆盖 pad[1]）与竖图（覆盖 pad[0]）**，并把这条约束写成 `src/models/gen_demo_fixtures.py` 的**自校验**（缺任一种就拒绝生成基准、返回码 5）。补上竖图后，同样的破坏立刻被自检抓住（minIoU 0.999 → 0）。
+- **状态**：已修复
+- **教训（可复用）**：自检的价值不看"是否 PASS"，而看"**改了该抓的东西它会不会红**"——新写的断言必须先用一次故意破坏证明它有牙齿。
+
+---
+
 > 后续训练和测试中发现的错误将继续追加到此文件。

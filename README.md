@@ -2,6 +2,10 @@
 
 基于 **YOLO11** 的校园场景手机使用行为检测系统。上传校园场景图片，自动检测画面中**使用手机的人**和**手机**的位置，并生成检测统计报告（可导出 Markdown）。
 
+> 🚀 **在线 Demo（点开即用，无需安装）**：<https://wmsisme.github.io/yolo11-campus-phone-detection/demo/>
+> 纯前端推理 —— 模型在你的浏览器里跑（onnxruntime-web / WebAssembly），**图片不上传服务器、不需要 API Key**。
+> 源码与说明见 [`docs/demo/`](docs/demo/README.md)。
+
 ## 应用场景
 
 - **课堂管理**：检测学生上课是否使用手机
@@ -36,6 +40,9 @@ streamlit run src/web/app.py
 
 浏览器会打开 <http://localhost:8501>。上传一张校园场景图片 → 点击「开始检测」→ 右侧查看统计报告并可导出 Markdown。
 
+> **只想看效果？** 用上面的[在线 Demo](https://wmsisme.github.io/yolo11-campus-phone-detection/demo/)（纯前端，零安装），
+> 或本地起静态服务：`python -m http.server 8080 --directory docs`，然后打开 <http://127.0.0.1:8080/demo/>。
+
 > **本仓库不包含数据集**（体积原因，见 `.gitignore`）。Web Demo 所需的训练权重、
 > 实验配置与指标、训练曲线均已入库，因此**开箱即可运行推理**；
 > 若要复现训练，请按下面「运行方式 / 准备数据集」下载数据集。
@@ -54,20 +61,29 @@ streamlit run src/web/app.py
 │   ├── data/dataset.py           # 数据集准备（→ YOLO 标准格式）
 │   ├── models/
 │   │   ├── train.py              # YOLO11 训练入口（argparse 驱动）
-│   │   └── detect.py             # 推理 / 绘图 / 报告生成
+│   │   ├── detect.py             # 推理 / 绘图 / 报告生成
+│   │   ├── export_onnx.py        # 导出 ONNX（前端推理用，int8 带自检）
+│   │   ├── onnx_infer.py         # ONNX 推理的 Python 参考实现（与前端逐步骤对齐）
+│   │   └── gen_demo_fixtures.py  # 生成静态 Demo 的示例图与自检基准
 │   ├── web/app.py                # Streamlit Web Demo（三栏布局）
 │   └── utils/
-│       ├── helpers.py            # 路径 / 日志 / JSON / YAML / 计时器
+│       ├── helpers.py            # 路径 / 日志 / JSON / YAML / 计时器（含 imread_unicode）
 │       └── metrics.py            # mAP 提取 + 训练曲线 + 实验对比图
-├── tests/test_smoke.py           # 冒烟测试
+├── tests/                        # 冒烟测试 + ONNX 一致性 + 静态 Demo 端到端
 ├── experiments/                  # 每个实验一个目录（config + metrics + 曲线 + best.pt）
 │   ├── exp0_yolo11n_baseline/
 │   ├── exp1_yolo11s_augment/
 │   ├── exp2_yolo11m_hyperparams/
-│   ├── exp3_reorganized_yolo11n/
-│   ├── exp4_reorganized_yolo11s/     ← 推荐模型（Web Demo 默认加载 yolo11n/yolo11s 均可用）
+│   ├── exp3_reorganized_yolo11n/     ← 静态 Demo 用的模型（mAP@50 0.729）
+│   ├── exp4_reorganized_yolo11s/     ← 推荐模型（mAP@50 0.726）
 │   └── exp5_reorganized_yolo11m/
-├── docs/                         # Harness 文档
+├── docs/
+│   ├── demo/                     # 纯前端静态 Demo（GitHub Pages 发布源）
+│   │   ├── index.html / app.js / style.css
+│   │   ├── model/phone-yolo11n.onnx   # 10.1 MB，浏览器直接下载运行
+│   │   ├── samples/              # 示例图（Roboflow Smart School v5，CC BY 4.0）
+│   │   ├── selftest.json         # 自检基准（由 Python 参考实现生成）
+│   │   └── vendor/ort/           # onnxruntime-web 本地副本（不依赖 CDN）
 │   ├── product-specs/index.md    # 功能列表与验收标准
 │   ├── exec-plans/               # 当前计划 + 技术债追踪
 │   ├── QUALITY_SCORE.md          # 质量评分卡
@@ -126,11 +142,38 @@ streamlit run src/web/app.py
 `yolo11s` → exp4）；若找不到训练权重会**明确提示**已退回通用 COCO 预训练权重，
 并声明该权重不具备手机检测能力，避免把 person/bicycle 误读成手机。
 
-### 4. 运行测试
+### 4. 静态 Demo（浏览器内推理，无需 Python）
+
+`docs/demo/` 是一个**纯前端**版本：模型导出为 ONNX，由 onnxruntime-web 在访客浏览器里执行。
+
+```bash
+# 起一个静态服务（浏览器限制 file:// 下的 fetch，不能直接双击 html）
+python -m http.server 8080 --directory docs
+# 打开 http://127.0.0.1:8080/demo/
+```
+
+导出模型与生成自检基准：
+
+```bash
+python -m src.models.export_onnx --weights experiments/exp3_reorganized_yolo11n/best.pt \
+    --out docs/demo/model/phone-yolo11n.onnx
+python -m src.models.gen_demo_fixtures
+```
+
+细节（口径对齐、自检机制、为什么不发 int8）见 [`docs/demo/README.md`](docs/demo/README.md)。
+
+### 5. 运行测试
 
 ```bash
 python -m pytest tests/ -v
 ```
+
+其中两组是本次新增的**真实验证**（不是文件存在性检查）：
+
+| 测试 | 验证什么 |
+|:--|:--|
+| `tests/test_onnx_parity.py` | 导出的 ONNX 与 PyTorch **逐框一致**（同一批验证集图片，IoU ≥ 0.9） |
+| `tests/test_webdemo.py` | 起本地服务 + 无头 Edge 真跑静态 Demo，断言浏览器内推理结果与 Python 基准一致、零 JS 报错 |
 
 ## 实验结果
 
