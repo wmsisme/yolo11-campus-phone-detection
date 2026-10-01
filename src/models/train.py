@@ -13,7 +13,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from ultralytics import YOLO
 
-from src.data.dataset import prepare_dataset, prepare_reorganized_dataset
+from src.data.dataset import (
+    prepare_dataset,
+    prepare_phone_usage_dataset,
+    prepare_reorganized_dataset,
+)
 from src.utils.helpers import get_project_root, logger, save_json
 from src.utils.metrics import extract_metrics_from_results, plot_training_curves
 
@@ -52,8 +56,9 @@ def main():
         "--dataset",
         type=str,
         default="smart_school",
-        choices=["smart_school", "reorganized"],
-        help="数据集选择: smart_school(原始141张) / reorganized(重组数据集22879张)",
+        choices=["smart_school", "reorganized", "phone_usage"],
+        help=("数据集选择: smart_school(原始141张) / reorganized(重组集22879张，"
+              "⚠️已证实标注污染、不可用) / phone_usage(手机使用状态 in_hand+on_ear，本地数据)"),
     )
     parser.add_argument(
         "--early_stop_map",
@@ -69,6 +74,8 @@ def main():
     logger.info("正在准备数据集...")
     if args.dataset == "reorganized":
         dataset_root = prepare_reorganized_dataset()
+    elif args.dataset == "phone_usage":
+        dataset_root = prepare_phone_usage_dataset()
     else:
         dataset_root = prepare_dataset()
     data_yaml = dataset_root / "data.yaml"

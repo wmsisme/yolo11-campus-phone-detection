@@ -163,6 +163,38 @@ def prepare_reorganized_dataset(force: bool = False) -> Path:
     return src
 
 
+def prepare_phone_usage_dataset() -> Path:
+    """返回「手机使用状态」数据集根目录（`in_hand` / `on_ear` 两类）。
+
+    这是 2026-10-01 口径调整后使用的数据集，由达铭补入的
+    `手机数据集/phone_usage_dataset`（COCO 派生 + 增广）经
+    `src/data/resplit_by_hash.py` 重切而来，用于消除"同一视频相邻帧/同图增广
+    跨 split"造成的泄漏（原 split 的 val/test 分别有 7.0% / 13.9% 近重复）。
+
+    ⚠️ 该数据集**按达铭要求只保存在本地、不入库**（`.gitignore` 已锚定 `/手机数据集/`）。
+    仓库 clone 后若未准备该数据集，本函数会抛出 FileNotFoundError —— 这是预期行为：
+    复现 exp6 训练需要自行准备数据，而仓库仍可开箱跑推理（自带 exp3/exp4 权重）。
+
+    data.yaml 采用**相对路径**，因此无需像 prepare_dataset() 那样按机器重写绝对路径。
+    """
+    project_root = get_project_root()
+    root = project_root / "手机数据集" / "phone_usage_split"
+    data_yaml = root / "data.yaml"
+    if not data_yaml.exists():
+        raise FileNotFoundError(
+            f"未找到手机使用数据集: {data_yaml}\n"
+            "  该数据集按约定不入库（本地数据）。准备步骤：\n"
+            "  1) 从 Roboflow/COCO 派生源取得 phone_usage_dataset（in_hand/on_ear）\n"
+            "  2) 运行 python -m src.data.resplit_by_hash --apply 生成 phone_usage_split"
+        )
+    logger.info(f"手机使用数据集已就绪: {root}")
+    for split in ("train", "val", "test"):
+        img_dir = root / "images" / split
+        if img_dir.exists():
+            logger.info(f"  {split}: {len(list(img_dir.glob('*')))} 张")
+    return root
+
+
 if __name__ == "__main__":
     prepare_dataset()
     print(get_dataset_stats(get_project_root() / "data" / "phone_detection"))
