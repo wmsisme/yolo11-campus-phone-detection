@@ -49,8 +49,20 @@ def main():
     )
     parser.add_argument(
         "--resume",
-        action="store_true",
-        help="从上次中断处继续训练",
+        nargs="?",
+        const=True,
+        default=False,
+        help=("从 checkpoint 继续训练。可传路径（默认取 runs/detect/<exp_name>/weights/last.pt）。"
+              "⚠️ 内部会传**绝对路径**给 ultralytics，避免它的 get_latest_run() 误续到别的实验。"
+              "续训时**不要**再传 --epochs（会变成'再训 N 轮'）。"),
+    )
+    parser.add_argument(
+        "--stop_after",
+        type=int,
+        default=0,
+        help=("跑到第 N 轮后正常收尾停止（0=不启用）。用于把长训练分段跑："
+              "第一阶段 --epochs 80 --stop_after 40，之后直接 --resume 补完剩下 40 轮。"
+              "checkpoint 里记录的仍是 80 轮，所以续训能自动补到 80。"),
     )
     parser.add_argument(
         "--dataset",
@@ -65,6 +77,19 @@ def main():
         type=float,
         default=0.0,
         help="mAP@50 早停阈值 (0=禁用, 例: 0.9 表示达到0.90即停止)",
+    )
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=2,
+        help=("dataloader 进程数（默认 2）。⚠️ 本机 15.6GB 物理内存，ultralytics 默认的 8 个 "
+              "worker 会因各自映射 torch 共享内存而把提交内存打爆——2026-10-01 实测报 "
+              "WinError 1455（页面文件太小）导致训练在 epoch 1 崩溃。内存紧张时调小此值。"),
+    )
+    parser.add_argument(
+        "--cache",
+        action="store_true",
+        help="把图片缓存到内存/磁盘以减少 IO（会额外占内存，按需使用）",
     )
     args = parser.parse_args()
 
@@ -154,12 +179,51 @@ def main():
                 return YOLO(f"{model_name}.pt")
             raise
 
-    # 断点续训：优先加载上次训练的 last.pt
+    # 断点续训：**必须显式指定本实验的 checkpoint**。
+    #
+    # ⚠️ 为什么不能直接传 `resume=True`：ultralytics 的 check_resume() 在 resume 不是路径时
+    #    会调用 `get_latest_run()` —— 本机 runs/detect/ 下有 6 个老实验目录，
+    #    它会挑到**别的实验**去续（实测机制如此）。所以这里自己解析出 last.pt 的**绝对路径**。
+    #
+    # 续训语义（读 ultralytics.resume_training 源码确认）：
+    #     start_epoch = ckpt["epoch"] + 1
+    #     assert 0 < start_epoch < self.epochs          # 已跑满则拒绝
+    #     if self.epochs < start_epoch: self.epochs += ckpt["epoch"]   # 自动"再训 N 轮"
+    #   ⇒ 想「跑完 40 轮后补到 80 轮」，**不要**在续训时传 --epochs 80（那会再训 80 轮 = 共 120）；
+    #     直接 --resume 即可，它会从中断处补到 ckpt 里记录的 80 轮。
+    #   ⇒ 而 checkpoint 里的 epochs 由**首次训练时**的 --epochs 决定：
+    #     分两段跑就必须**首次就用最终总轮数**（本次 = 80），第一阶段用 --stop_after 截断。
     run_dir = project_root / "runs" / "detect" / args.exp_name
     last_pt = run_dir / "weights" / "last.pt"
-    if args.resume and last_pt.exists():
-        logger.info(f"从断点恢复: {last_pt}")
-        model = YOLO(str(last_pt))
+    resume_path = None
+    if args.resume:
+        explicit = Path(args.resume) if isinstance(args.resume, str) else None
+        if explicit and explicit.is_file():
+            resume_path = explicit.resolve()
+        elif last_pt.exists():
+            resume_path = last_pt.resolve()
+        else:
+            logger.error(
+                f"--resume 找不到可用 checkpoint：{last_pt} 不存在。\n"
+                "  （不会退回到 get_latest_run()，以免误续到别的实验目录）"
+            )
+            sys.exit(2)
+        # 打印断点信息，便于确认真从中断处继续
+        try:
+            import torch as _torch
+            _ck = _torch.load(str(resume_path), map_location="cpu", weights_only=False)
+            _done = int(_ck.get("epoch", -1)) + 1
+            _target = int(_ck.get("train_args", {}).get("epochs")
+                          or _ck.get("args", {}).get("epochs") or 0)
+            logger.info(f"断点续训: {resume_path}")
+            logger.info(f"  已完成 {_done} 轮，checkpoint 记录目标 {_target} 轮")
+            if _target and _done >= _target:
+                logger.info("  注意：该 checkpoint 已跑满目标轮数，续训只会重跑（请检查是否传了 --epochs）")
+        except Exception as e:  # noqa: BLE001
+            logger.warning(f"读取断点信息失败（不影响续训）: {e}")
+
+    if resume_path is not None:
+        model = YOLO(str(resume_path))
     else:
         model = _load_model_safe(args.model)
 
@@ -216,7 +280,22 @@ def main():
         model.add_callback("on_train_end", on_train_end)
         logger.info(f"早停机制已启用: mAP@50 >= {args.early_stop_map:.2f} 时停止")
 
-    logger.info(f"开始训练 (epochs={args.epochs}, batch={args.batch}, imgsz={args.imgsz})...")
+    # 分段跑的截断：跑到第 stop_after 轮正常收尾（checkpoint 里仍是 args.epochs 轮）
+    if args.stop_after > 0:
+        if args.stop_after >= args.epochs and not resume_path:
+            logger.warning(f"--stop_after({args.stop_after}) >= --epochs({args.epochs})，该设置无效")
+        else:
+            def _on_fit_epoch_end_seg(trainer):
+                if int(getattr(trainer, "epoch", 0)) + 1 >= args.stop_after:
+                    trainer.stop_training = True
+                    logger.info(f"已到 --stop_after={args.stop_after} 轮，正常收尾停止；"
+                                f"之后用 --resume 继续补完")
+
+            model.add_callback("on_fit_epoch_end", _on_fit_epoch_end_seg)
+            logger.info(f"分段模式：跑到第 {args.stop_after} 轮停止（目标总轮数 {args.epochs}）")
+
+    logger.info(f"开始训练 (epochs={args.epochs}, batch={args.batch}, imgsz={args.imgsz}, "
+                f"workers={args.workers}, resume={'是' if resume_path else '否'})...")
     results = model.train(
         data=data_yaml_abs,
         epochs=args.epochs,
@@ -224,10 +303,13 @@ def main():
         imgsz=args.imgsz,
         lr0=args.lr,
         device=args.device,
+        workers=args.workers,
+        cache=args.cache,
         project=str(project_root / "runs" / "detect"),
         name=args.exp_name,
         exist_ok=True,
-        resume=args.resume,
+        # 显式传 checkpoint 绝对路径（True 会走 get_latest_run() 误续到别的实验）
+        resume=str(resume_path) if resume_path else False,
         # 数据增强（YOLO11 默认为 True，显式设置确保启用）
         augment=True,
         hsv_h=0.015,
