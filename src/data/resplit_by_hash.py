@@ -156,8 +156,6 @@ def main():
                 if dsu.find(a) != dsu.find(b) and _hamming(ha, hb) <= THRESHOLD:
                     near_merges += 1
                     dsu.union(a, b)
-    print(f"  同哈希组 {sum(1 for _h, s in by_hash.items() if len(s) > 1)}；"
-          f" 近邻合并(≤{THRESHOLD}bit) {near_merges} 次")
     # 文件名组名合并（同名组必同折）
     by_name = defaultdict(list)
     for r in rows:
