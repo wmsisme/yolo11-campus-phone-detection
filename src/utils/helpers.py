@@ -33,6 +33,24 @@ def imread_unicode(path, flags: int = cv2.IMREAD_COLOR):
     return cv2.imdecode(buf, flags)
 
 
+def imwrite_unicode(path, image) -> bool:
+    """写入图片，**支持中文/非 ASCII 路径**（`imread_unicode` 的写入版）。
+
+    ⚠️ 比 `imread` 更阴的一点：`cv2.imwrite` 在中文路径下**会返回 True 却什么都没写**
+    （2026-10-01 实测：`cv2.imwrite('runs/_diag/_t_中文.png', img)` 返回 True，紧接
+    `os.path.exists()` 为 False）。也就是说**连返回值都不可信**，不事后 stat 根本发现不了。
+    故这里用 `cv2.imencode` + `tofile` 绕开，并显式回报是否真的写成功。
+    """
+    ok, buf = cv2.imencode(Path(path).suffix or ".png", image)
+    if not ok:
+        return False
+    try:
+        buf.tofile(str(path))
+    except OSError:
+        return False
+    return Path(path).exists()
+
+
 def setup_logger(name: str = "phone_detection", level: int = logging.INFO) -> logging.Logger:
     """创建并返回配置好的 logger"""
     logger = logging.getLogger(name)
