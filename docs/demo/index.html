@@ -116,6 +116,12 @@
         <li>代码 MIT，模型由 <a href="https://github.com/ultralytics/ultralytics" target="_blank" rel="noopener">ultralytics</a>（AGPL-3.0）训练；本页源码随仓库公开。</li>
         <li>请勿上传含可识别面部信息、证件等隐私照片。</li>
       </ul>
+      <p class="muted" style="margin:10px 0 0">
+        ⚠️ <b>已知限制（2026-10-01 实测）</b>：训练数据的标注存在污染——相当比例的图片把
+        <b>头部/人脸</b>错标成了「手机」（详见仓库
+        <code>docs/exec-plans/tech-debt-tracker.md</code> 错误 #015），导致模型会把<b>人脸误判为手机</b>。
+        因此本页结果<b>仅供流程演示，请勿用于真实场景判定</b>；标注清洗与重训完成前，mAP 等指标也需打折看待。
+      </p>
     </details>
   </section>
 </main>
