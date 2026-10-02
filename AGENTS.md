@@ -1,33 +1,63 @@
-# 项目开发指导：基于 YOLO11 的校园手机使用检测系统
+# 项目开发指导：基于 YOLO11 的手机使用检测系统
 
-> 本文件是专为 AI Agent 编写的开发手册。\
-> **你的任务**：在遵守以下规则的前提下，协助开发者完成一个 Level 3 智能视觉项目。\
+> 本文件是专为 AI Agent 编写的开发手册。
+> **你的任务**：在遵守以下规则的前提下，协助开发者维护并改进一个**要实际上线使用的手机检测系统**。
 > **核心原则**：先读规则，再行动；每次修改后更新进度；绝不伪造结果。
+
+---
+
+> ### ⚠️ 本项目首先是「**要上线的产品**」，作业只是它的一个侧面（2026-10-02 明确）
+>
+> 开发者原话：「**这不单单只是我的一个作业，而是一个用于上线的项目。项目的目的是要实现手机检测这个功能。**」
+>
+> 因此所有工作的**首要判据是「这个功能在真实使用中靠不靠得住」**，而不是"文档写了没、指标好不好看"：
+>
+> - **验收看真实场景表现**——曾出现"验证集 mAP@50=0.73 很好看，但上线后一用就把人脸判成手机"。
+>   指标必须与用户能感知的效果一致（详见 `reports/final-report.md` 第 9/11 节）。
+> - **交付物必须能真的跑起来**：线上 Demo <https://wmsisme.github.io/yolo11-campus-phone-detection/demo/> 是门面，
+>   任何改动都要**回线复验**（资产可得、文案与模型口径一致、浏览器内推理结果与 Python 基准逐框一致）。
+> - **对局限如实标注**——宁可在页面上写明"远距离小手机检不出"，也不要让人用错场景后才发现。
+>
+> ### 📌 当前实际口径（与下方"历史设计"不一致时以本段为准）
+>
+> | 项 | 当前事实 |
+> |:--|:--|
+> | 检测类别 | **`in_hand`（手持手机）/ `on_ear`（贴耳手机）**——「正在被使用的手机」；**不输出"人"这一类** |
+> | 训练数据 | `phone_usage` 数据集（约 1.7 万张，本地保存不入库），**不是 Smart School v5** |
+> | 生产权重 | `experiments/exp6_phone_usage_yolo11s/`（40 轮，干净数据） |
+> | 部署阈值 | **conf = 0.50**（Precision 0.8251 / Recall 0.3520）；默认 0.25 时 P 0.6934 / R 0.3950 |
+> | 线上形态 | 纯前端静态 Demo（`docs/demo/`，ONNX + onnxruntime-web）+ 本地 Streamlit（`src/web/app.py`） |
+> | 已知限制 | 教室**远距离小手机**检不出（尺度/域差异；实测提高 imgsz 无效）；不圈出整个人 |
+> | 变更原因 | 旧的重组数据集**标注污染**（人脸被标成 cellphone），已整体弃用——详见 `docs/exec-plans/tech-debt-tracker.md` #015/#016 |
 
 ---
 
 ## 1. 项目目标
 
-开发一个 **Web 应用**，允许用户：
+开发一个**可上线的手机检测系统**，允许用户：
 
-- **上传校园场景图片**，自动检测画面中是否有人在**使用手机**，以及**手机的位置**。
+- **上传图片**，自动检测画面中**正在被使用的手机**（**手持 `in_hand` / 贴耳 `on_ear`**）。
+  > 口径说明：数据集只标注了手机本体、**没有"人"的框**，故以「手机框」代表"此处有人在用手机"，
+  > **不会圈出整个人**。若要"框住人"，需另找带人物标注的数据重训。
 - **切换不同模型**（YOLO11n/s/m）对比检测效果。
 - **查看检测报告**（检测框数量、类别分布、置信度统计）。
 - **导出检测报告**为 Markdown 格式。
+- **纯前端在线体验**：模型在浏览器内推理，**图片不上传服务器、无需 API Key**。
 
-项目需包含**完整模型训练**、**多组实验对比**、**错误分析**和**完整的 Harness 文档**。
+项目同时包含**完整模型训练**、**多组实验对比**、**错误分析**和**完整的 Harness 文档**，
+并被作为课程项目的展示对象（`reports/final-report.md` 按 16 节组织）。
 
 ---
 
-## 2. 技术路线（强制）
+## 2. 技术路线
 
 | 模块 | 技术选型 | 说明 |
 |:-----|:---------|:-----|
-| 目标检测 | YOLO11 (n/s/m 三尺度) | 使用 smart school 数据集训练，含数据增强 |
-| 数据来源 | Roboflow Smart School v5 | 校园场景手机使用检测标注数据集 (141 张) |
-| 前端界面 | Streamlit | 三栏布局：上传/控制 → 检测画布 → 统计报告 |
-| 后端推理 | Python + PyTorch + ultralytics | 所有模型本地运行 |
-| 实验追踪 | 手动记录 Markdown + metrics.json + 训练曲线图 | 每个实验的配置、指标、可视化 |
+| 目标检测 | YOLO11 (n/s/m 三尺度) | 当前生产权重为 **yolo11s**，在 `phone_usage` 数据集上训练，含数据增强 |
+| 数据来源 | `phone_usage` 数据集（本地，不入库） | COCO 派生的手机使用场景标注（约 1.7 万张）；**旧的重组数据集已因标注污染弃用** |
+| 前端界面 | Streamlit（本地） + 纯静态页（线上） | 三栏布局：上传/控制 → 检测画布 → 统计报告 |
+| 后端推理 | Python + PyTorch + ultralytics（本地）／onnxruntime-web（浏览器） | 线上为**纯前端**，无需后端 |
+| 实验追踪 | Markdown + metrics.json + 训练曲线图 | 每个实验的配置、指标、可视化 |
 
 ---
 
@@ -119,7 +149,53 @@
 
 ---
 
-## 5. 开发步骤（按顺序执行）
+## 5. 当前生产链路（新会话照此上手）
+
+> 与下方的"历史开发步骤"不同，**这一节是当前真实在用的链路**。
+
+### Step A：环境
+
+- `pip install -r requirements.txt`（核心：`ultralytics`, `torch`, `streamlit`, `opencv-python`, `pytest`, `onnxruntime`）
+
+### Step B：本地跑起来（Streamlit）
+
+- `streamlit run src/web/app.py` → <http://localhost:8501>
+- 模型自动从 `experiments/` 扫描加载（当前会命中 `exp6_phone_usage_yolo11s`），
+  **类别名以权重自带的 `names` 为准**（不要再硬编码——曾因此出现"模型框手机、界面标成人"）
+
+### Step C：改模型 / 换权重后（**必做回线复验**）
+
+```bash
+# 1) 导出 ONNX（契约：imgsz 640 / opset 13 / 关闭内置 NMS）
+python -m src.models.export_onnx --weights experiments/<exp>/best.pt \
+    --out docs/demo/model/<name>.onnx
+# 2) 重新生成示例图与自检基准（换口径时同时换 --preset）
+python -m src.models.gen_demo_fixtures --preset phone-usage --model docs/demo/model/<name>.onnx
+# 3) 同步前端类别与文案（app.js 的 CLASSES / MODELS / SAMPLE_FILES，index.html 的标签与说明）
+# 4) 全量测试：确认关键用例是 PASSED 而不是 SKIPPED（写死旧模型名会静默 skip = 假通过）
+python -m pytest tests/ -q -rs
+# 5) 推送后回线复验：页面/JS/模型/示例图逐个 HTTP 200，且页面文案与新口径一致
+```
+
+### Step D：重新训练
+
+```bash
+python -m src.models.train --model yolo11s --dataset phone_usage \
+    --epochs <N> --batch 4 --workers 2 --imgsz 640 --device 0 --exp_name <name>
+```
+
+> ⚠️ **两个已踩过的坑**：① 本机只有 15.6GB 内存，`batch 4 / workers 2` 是实测稳定值，
+> 放大 worker 数会打爆页面文件（WinError 1455）并留下僵尸进程；
+> ② **checkpoint 被 `strip_optimizer` 剥离后无法 `--resume`**（`epoch=-1`），
+> 要支持续训须在训练中/收尾前另存未剥离的 ckpt。
+
+### Step E：展示材料
+
+- `reports/final-report.md` 按 16 节维护，**必须与当前口径和真实结论一致**（旧指标要标注作废，不能留着误导）
+
+---
+
+## 5b. 历史开发步骤（项目初期，保留作过程记录）
 
 ### Step 0：环境搭建
 
@@ -128,7 +204,7 @@
 
 ### Step 1：数据准备
 
-- 运行 `python -m src.data.dataset` 将 smart school 数据集组织为 YOLO 标准格式
+- 运行 `python -m src.data.dataset` 将数据集组织为 YOLO 标准格式
 - 验证 `data/phone_detection/data.yaml` 正确
 
 ### Step 2：基线训练 (exp0)
@@ -148,28 +224,33 @@
 
 ### Step 5：测试与验证
 
-- 运行冒烟测试：`python -m pytest tests/ -v`
-- 在 Web Demo 上用测试集图片手动验证
+- 运行测试：`python -m pytest tests/ -v`
+- 在 Web Demo 上用真实图片手动验证
 
-### Step 6：最终报告
+### Step 6：展示材料
 
-- 按作业 16 部分填写 `reports/final-report.md`
+- 按 16 部分填写 `reports/final-report.md`
 - 包含实验结果对比表、训练曲线、误检/漏检分析
 
 ---
 
-## 6. 质量标准（来自 `QUALITY_SCORE.md`）
+## 6. 质量标准
 
-| 指标 | 目标值 | 验证方法 |
-|:-----|:------|:--------|
-| mAP@50 | ≥ 0.70 | 验证集计算 |
-| mAP@50-95 | ≥ 0.45 | 验证集计算 |
-| Precision | ≥ 0.75 | 验证集计算 |
-| Recall | ≥ 0.65 | 验证集计算 |
-| 推理时间 | < 0.5s/图 (GPU) / < 3s/图 (CPU) | 计时测试 |
-| 冒烟测试通过 | 5+/5 pass | pytest |
-| Harness 文档一致性 | 11 个必需文件齐全且与项目一致 | 人工检查 |
-| 错误记录 | ≥ 5 条真实错误及分析 | 人工检查 |
+> **首要判据是"上线能不能用"**，而不是"指标好不好看"。历史教训：验证集 mAP@50 = 0.73 很漂亮，
+> 但上线后**把人脸判成手机**（真实负样本误报 67.7%）——指标必须与用户能感知的效果一致。
+
+| 指标 | 目标值 | 当前实测 | 说明 |
+|:-----|:------|:--------|:-----|
+| **真实负样本误报率**（conf≥0.5） | **< 5%** | **1.3%** ✅ | ← **最贴近用户痛点的指标**；旧模型为 67.7% |
+| Precision（部署阈值 conf=0.50） | ≥ 0.80 | **0.8251** ✅ | 部署口径 |
+| Precision（默认 conf=0.25） | ≥ 0.75 | 0.6934 ⚠️ | 保守口径下的权衡值（R 更高） |
+| Recall（conf=0.50） | 记录并如实报告 | 0.3520 | 低召回是**有意的保守取舍**，已公开写明 |
+| mAP@50 / mAP@50-95 | 记录并如实报告 | 0.3646 / 0.1743 | **不作为首要达标线**（易被标注质量扭曲） |
+| 推理时间（浏览器，单张 640） | < 1s | 约 0.3s ✅ | 实测 |
+| 全量测试 | 全绿 | **17 passed, 1 skipped** ✅ | 关键用例须真跑非 skip |
+| 线上可访问性 | 资产全 200 | ✅ | 页面/JS/模型/示例图逐项核验 |
+| Harness 文档一致性 | 与现状一致 | ✅ | 含 `AGENTS.md` 顶部"当前实际口径"表 |
+| 错误记录 | ≥ 5 条 | **18 条** ✅ | `tech-debt-tracker.md` |
 
 ---
 
@@ -185,12 +266,27 @@
 
 ---
 
-## 8. 最终交付物检查清单
+## 8. 交付与上线检查清单
 
-- [x] 项目代码（`src/`, `tests/`, `requirements.txt`）可完整运行
-- [x] 所有 Harness 文档齐全
-- [ ] `experiments/` 下至少包含 3 组实验，每组有 `config.yaml` + `metrics.json` + `training_curves.png`
-- [ ] 至少 5 条错误案例记录在 `tech-debt-tracker.md`
-- [ ] `reports/final-report.md` 满足作业 16 个部分要求
-- [ ] Web Demo 可正常运行并展示检测结果
-- [ ] 冒烟测试全部通过
+**上线口径（首要判据）：**
+
+- [x] **线上 Demo 可访问且真的能推理**：<https://wmsisme.github.io/yolo11-campus-phone-detection/demo/>
+- [x] 线上资产逐项 HTTP 核验（页面 / app.js / selftest.json / ONNX 模型 / 示例图 全 200）
+- [x] 页面文案与模型口径**一致**（类别名、指标、局限说明）
+- [x] 浏览器内推理结果与 Python 参考实现**逐框一致**（自检 + 无头浏览器端到端测试）
+- [x] 训练模型与训练数据集**不入库**（数据集本地保存；权重按需选择性入库）
+
+**工程口径：**
+
+- [x] 项目代码（`src/`, `tests/`, `requirements.txt`）可完整运行；`clone → pip install → 启动` 即可推理
+- [x] 全量测试通过：`python -m pytest tests/ -q` → **17 passed, 1 skipped**
+- [x] 所有 Harness 文档齐全且与项目现状一致
+- [x] `experiments/` 下含多组实验，每组有 `config.yaml` + `metrics.json` + `training_curves.png`
+- [x] 错误案例记录在 `tech-debt-tracker.md`（**18 条**，远超 5 条下限）
+- [x] Web Demo（Streamlit 本地版 + 静态在线版）均可正常运行并展示检测结果
+
+**展示口径（课程/面试用途）：**
+
+- [x] `reports/final-report.md` 满足 16 个部分要求，且已同步到当前口径与真实结论
+- [ ] 截取 Web Demo 运行截图插入报告
+- [ ] （可选）录制演示视频

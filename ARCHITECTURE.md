@@ -1,6 +1,17 @@
 # 系统架构
 
-## 整体架构
+> **项目定位**：这是一个**已上线运行**的手机检测系统（<https://wmsisme.github.io/yolo11-campus-phone-detection/demo/>），
+> 不是演示稿。检测类别为 **`in_hand`（手持手机）/ `on_ear`（贴耳手机）**——「正在被使用的手机」；
+> **不输出"人"这一类**（数据集没有人物标注，故以手机框代表"此处有人在用手机"）。
+
+## 两种运行形态
+
+| 形态 | 位置 | 推理位置 | 说明 |
+|:--|:--|:--|:--|
+| **线上（主要交付）** | `docs/demo/` → GitHub Pages | **浏览器内**（ONNX + onnxruntime-web） | 纯静态、**无后端**；图片不上传服务器；模型 36.2 MB 走 CDN 缓存 |
+| 本地（调试/批量） | `src/web/app.py` | 本机 PyTorch | Streamlit 三栏界面，可导出 Markdown 报告 |
+
+## 整体架构（本地 Streamlit 版）
 
 ```
 ┌──────────────────────────────────────────────────────────┐
@@ -22,7 +33,7 @@
 │  │  - yolo11n (轻量)    │  │  - detect_image()         │ │
 │  │  - yolo11s (均衡)    │  │  - draw_boxes()           │ │
 │  │  - yolo11m (精度)    │  │  - generate_report()      │ │
-│  │  类别: 使用手机的人, 手机 │  │  - report_to_markdown()   │ │
+│  │  类别: 手持手机, 贴耳手机 │  │  - report_to_markdown()   │ │
 │  └──────────────────────┘  └───────────────────────────┘ │
 └──────────────────────────────────────────────────────────┘
 ```
@@ -33,12 +44,13 @@
 
 1. 用户上传图片 → PIL/Pillow 解码 → 转为 BGR numpy 数组
 2. 传入 YOLO11 模型 → 得到检测框列表
-3. 后处理：绘制检测框（红色=使用手机的人，蓝色=手机）→ 生成统计报告
+3. 后处理：绘制检测框（橙=手持手机，蓝=贴耳手机）→ 生成统计报告
 4. 前端展示：中间显示标注后的图片，右侧显示统计面板
+5. **部署口径**：conf 阈值默认 0.25（R 高）；**生产建议 0.50**（P 0.8251 / R 0.3520）
 
 ### 训练流程
 
-1. `src/data/dataset.py` 将 smart school 数据集复制到 `data/phone_detection/`，生成 `data.yaml`
+1. `src/data/dataset.py` 将数据集组织为 YOLO 标准格式（当前生产集：`手机数据集/phone_usage_split`，本地保存不入库），生成 `data.yaml`
 2. `src/models/train.py` 接收命令行参数 → 调用 `ultralytics.YOLO.train()`
 3. 训练结果自动保存到 `runs/detect/<exp_name>/`
 4. `src/utils/metrics.py` 提取 mAP/Precision/Recall，绘制训练曲线
@@ -48,10 +60,13 @@
 
 | 模块 | 文件 | 功能 |
 |------|------|------|
-| 数据准备 | `src/data/dataset.py` | 将 Roboflow 数据集组织为 YOLO 标准格式 |
-| 模型训练 | `src/models/train.py` | YOLO11 训练入口，命令行参数驱动，自动记录实验 |
+| 数据准备 | `src/data/dataset.py` | 将数据集组织为 YOLO 标准格式（含按源重切消除泄漏的脚本） |
+| 模型训练 | `src/models/train.py` | YOLO11 训练入口，命令行参数驱动，自动记录实验；支持 `--resume` 断点中继 |
 | 模型推理 | `src/models/detect.py` | 图片检测、框绘制、报告生成、导出 |
-| Web 前端 | `src/web/app.py` | Streamlit 三栏交互界面 |
+| ONNX 导出 | `src/models/export_onnx.py` | 导出前端用 ONNX（imgsz 640 / opset 13 / 关闭内置 NMS），带结果级自检 |
+| Python 参考推理 | `src/models/onnx_infer.py` | **前端口径的基准实现**：letterbox → 解码 → 逐类别 NMS（app.js 必须与之对齐） |
+| 前端（线上） | `docs/demo/` | 单页静态站：纯浏览器内推理 + 自检基准比对 |
+| Web 前端（本地） | `src/web/app.py` | Streamlit 三栏交互界面；**类别名以权重自带 `names` 为准** |
 | 工具函数 | `src/utils/helpers.py` | 项目路径、日志、JSON/YAML、计时器 |
 | 指标可视化 | `src/utils/metrics.py` | mAP 提取、训练曲线绘制、实验对比图 |
 
@@ -60,17 +75,19 @@
 | 组件 | 技术 | 说明 |
 |------|------|------|
 | 目标检测 | YOLO11 (ultralytics) | 最新 YOLO 系列，C2f 架构，精度和速度均衡 |
-| 前端 | Streamlit | 轻量级 Python Web 框架，三栏布局灵活 |
-| 图像处理 | OpenCV + Pillow | 图片读写、检测框绘制 |
+| 前端（线上） | ONNX + onnxruntime-web | 浏览器内推理，纯静态托管，无需后端 |
+| 前端（本地） | Streamlit | 轻量级 Python Web 框架，三栏布局灵活 |
+| 图像处理 | OpenCV + Pillow | 图片读写、检测框绘制（**中文路径需走 `imread_unicode`/`imwrite_unicode`**） |
 | 实验追踪 | 手动 Markdown + metrics.json + 训练曲线 | 每组实验独立目录 |
 | 数据增强 | YOLO11 内置 (Mosaic, HSV, Flip, Scale) | 自动处理，无需额外编码 |
 
 ## 模型选择理由
 
-| 变体 | 参数量 | 适用场景 | 实验角色 |
+| 变体 | 参数量 | 适用场景 | 现状 |
 |------|--------|---------|---------|
-| YOLO11n (nano) | ~2.6M | 边缘设备、实时推理 | 轻量基线 |
-| YOLO11s (small) | ~9.4M | 精度与速度均衡 | 推荐方案 |
-| YOLO11m (medium) | ~20.1M | 追求最高精度 | 精度上限 |
+| YOLO11n (nano) | ~2.6M | 边缘设备、实时推理、**网页首屏友好** | 旧线上版曾用；若在意 36 MB 首屏可另训一版换用 |
+| YOLO11s (small) | ~9.4M | 精度与速度均衡 | **当前生产权重**（`exp6_phone_usage_yolo11s`） |
+| YOLO11m (medium) | ~20.1M | 追求最高精度 | 早期实验用过，小数据上反而更差（见最终报告错误 5） |
 
-三组实验从轻量到精度逐步对比，展示模型选择的实际依据。
+当前生产权重：**exp6（干净数据、40 轮、`in_hand`/`on_ear`）**，在真实负样本上的误报率 **1.3%**。
+早期 exp3/exp4 因**训练集标注污染**已弃用（指标虚高且会把人脸判成手机），详见最终报告第 9/11 节。

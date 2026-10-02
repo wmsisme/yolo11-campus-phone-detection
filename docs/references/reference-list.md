@@ -4,13 +4,19 @@
 
 | 名称 | 来源 | 说明 |
 |------|------|------|
-| Smart School v5 | [Roboflow Universe](https://universe.roboflow.com/) | 校园场景手机使用检测数据集，141 张图片，标注类别：People using cellphone, cellphone（CC BY 4.0） |
-| University-Outdoor v1 | [Roboflow Universe](https://universe.roboflow.com/) | 重组数据集来源之一 |
-| University ver 2 / ver 3 | [Roboflow Universe](https://universe.roboflow.com/) | 重组数据集来源之一 |
-| School v1 | [Roboflow Universe](https://universe.roboflow.com/) | 重组数据集来源之一 |
+| **`phone_usage`（当前生产集）** | COCO 派生的手机使用数据集 | 约 1.7 万张，类别：**in_hand（手持手机）/ on_ear（贴耳手机）**（CC BY 4.0）。本地保存、**不随仓库分发** |
+| Smart School v5 | [Roboflow Universe](https://universe.roboflow.com/) | **早期数据集**（141 张，类别 People using cellphone / cellphone）。已不用于生产训练 |
+| University-Outdoor v1 | [Roboflow Universe](https://universe.roboflow.com/) | ~~重组数据集来源之一~~（该重组集已弃用，见下） |
+| University ver 2 / ver 3 | [Roboflow Universe](https://universe.roboflow.com/) | ~~重组数据集来源之一~~（同上） |
+| School v1 | [Roboflow Universe](https://universe.roboflow.com/) | ~~重组数据集来源之一~~（同上） |
 
-> 上述 4 个数据集经类别映射合并为 `reorganized_phone_dataset_yolo`（train 18,800 / val 1,730 / test 2,349，共 22,879 张），统一为 2 类。
-> **所有数据集均不随本仓库分发**，需自行从 Roboflow 下载。
+> ⚠️ **上述 4 个数据集合并成的 `reorganized_phone_dataset_yolo`（22,879 张）已整体弃用**：
+> 审计发现其标注被污染——大量 `cellphone` 框套在人脸/头部上（`cellphone` 框中 77.2% 边长 >25%，
+> 而「People using cellphone」中位边长仅 13.5%，语义倒挂），导致模型**把人脸判成手机**
+> （真实负样本误报 67.7%）。详见 `docs/exec-plans/tech-debt-tracker.md` #015/#016
+> 与 `reports/final-report.md` 第 9 节「阶段七」。
+>
+> **当前生产训练使用 `phone_usage` 数据集**（本地保存，需自行获取）。**所有数据集均不随本仓库分发**。
 
 ## 模型与框架
 
