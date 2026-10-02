@@ -288,5 +288,5 @@ python -m src.models.train --model yolo11s --dataset phone_usage \
 **展示口径（课程/面试用途）：**
 
 - [x] `reports/final-report.md` 满足 16 个部分要求，且已同步到当前口径与真实结论
-- [ ] 截取 Web Demo 运行截图插入报告
+- [x] 截取线上 Demo 运行截图插入报告（`reports/assets/demo-screenshot.png`，由 `tests/headless_probe.mjs --shot` 真实抓取）
 - [ ] （可选）录制演示视频

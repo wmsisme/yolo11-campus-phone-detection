@@ -28,6 +28,10 @@ const shotIdx = process.argv.indexOf('--shot');
 const SHOT_PATH = shotIdx > 0 ? process.argv[shotIdx + 1] : null;
 const sizeIdx = process.argv.indexOf('--size');
 const VIEWPORT = sizeIdx > 0 ? process.argv[sizeIdx + 1] : null;   // 例如 1440x900
+// 拍图前再等一会儿：`window.__demo` 填充的那一瞬，画面与报告可能还没渲染完，
+// 直接截会拍到"结果已出但界面没画好"的中间态（做报告配图时踩过）。
+const delayIdx = process.argv.indexOf('--delay');
+const SHOT_DELAY_MS = delayIdx > 0 ? Number(process.argv[delayIdx + 1] || 1500) : 0;
 const EDGE = process.env.EDGE_PATH
   || 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe';
 
@@ -145,6 +149,7 @@ async function main() {
 
     if (SHOT_PATH) {
       try {
+        if (SHOT_DELAY_MS > 0) await sleep(SHOT_DELAY_MS);
         const shot = await cdp.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: true });
         writeFileSync(SHOT_PATH, Buffer.from(shot.data, 'base64'));
       } catch (e) {

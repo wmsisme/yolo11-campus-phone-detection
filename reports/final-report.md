@@ -380,13 +380,24 @@ python -m pytest tests/ -v
 **④ 已验证无效的方向（省得后人重走）**：把推理 `imgsz` 从 640 提到 960/1280 以救小目标——
 实测**反而更差**（同一批教室图：640→34 框、960→16、1280→15），因为训练分辨率是 640，改尺寸造成尺度错配。
 
+### Web Demo 截图（线上真实运行）
+
+![线上 Demo 实拍：工地场景检出 3 个「使用中的手机」](assets/demo-screenshot.png)
+
+> **上图不是示意图，是线上 Demo 的真实运行截图**——用无头 Edge 打开
+> <https://wmsisme.github.io/yolo11-campus-phone-detection/demo/?sample=sample-in-hand.jpg>
+> 加载示例图并完成一次浏览器内推理后抓取（`tests/headless_probe.mjs --shot`）。
+>
+> 这一帧的事实：**检出 3 个目标**（手持手机 1 个 0.830 / 贴耳手机 2 个 0.781、0.770）；
+> 预处理 15 ms、**推理 833 ms**、后处理 4 ms；**零控制台报错**。
+> 左侧可看到类别过滤、置信度与 NMS 阈值、模型卡片（标注了真实指标与已知局限）；
+> 右侧是自动生成的检测报告（类别计数、置信度分布、逐框明细、面积占比）。
+> 页面底部注明「图片只在本地处理」——**图片不上传任何服务器**。
+
 ### 训练曲线
 
-> 每个实验的 training_curves.png 已保存在 `experiments/<exp_name>/` 目录下，`experiments/comparison.png` 为六组实验的对比图。
-
-### Web Demo 截图
-
-> 启动 Streamlit 后进行截图，展示完整的检测结果
+> 每个实验的 `training_curves.png` 保存在 `experiments/<exp_name>/` 下；
+> 当前生产实验为 `experiments/exp6_phone_usage_yolo11s/`（含 `metrics.json` 与曲线图）。
 
 ---
 
