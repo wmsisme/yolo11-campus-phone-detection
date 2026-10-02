@@ -85,10 +85,22 @@ def load_detection_model(model_variant: str) -> tuple:
 
     with st.spinner(f"正在加载模型 {model_variant}..."):
         model = load_model(trained_path)
-        # 只有训练好的权重才强制手机检测的类别名；
-        # 通用 COCO 权重绝不能改写 names，否则会把 person/bicycle 误标成手机。
+        # 只有训练好的权重才需要处理类别名；通用 COCO 权重绝不能改写 names，
+        # 否则会把 person/bicycle 误标成手机。
+        #
+        # ⚠️ 2026-10-02 修正：**不要硬编码类别名**。
+        #   原先这里无条件写成 {0: "People using cellphone", 1: "cellphone"}，
+        #   但项目已存在两套口径的权重：
+        #     · 旧口径 exp3/exp4 → {0: People using cellphone, 1: cellphone}
+        #     · 新口径 exp6（干净数据重训）→ {0: in_hand, 1: on_ear}
+        #   扫描逻辑按"目录名含模型变体"匹配会选中 exp6（`exp6_phone_usage_yolo11s`
+        #   含 `yolo11s`），此时硬改名字会导致**模型在框手机、界面标成"人"**的静默错位。
+        #   正确做法：以权重自带的 names 为准，仅在缺失时兜底。
         if is_trained and hasattr(model, "names"):
-            model.names = {0: "People using cellphone", 1: "cellphone"}
+            if not model.names:
+                model.names = {0: "People using cellphone", 1: "cellphone"}
+            else:
+                logger.info(f"沿用权重自带类别名: {model.names}")
         return model, is_trained
 
 
