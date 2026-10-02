@@ -1,0 +1,9 @@
+batch: 4
+data_yaml: D:\code_item\手机检测\手机数据集\phone_usage_split\data.yaml
+device: '0'
+epochs: 100
+experiment: exp6_phone_usage_yolo11s
+imgsz: 640
+lr0: 0.01
+model: yolo11s
+timestamp: '2026-10-02T00:47:34.239193'
