@@ -17,8 +17,14 @@
 | 依赖 | 无 Python、无 API Key | ultralytics + torch + streamlit |
 | 适合 | 分享链接给别人看、面试演示 | 批量检测、实验对比、报告导出 |
 
-两者**共用同一个训练权重**：静态 Demo 用的 ONNX 由 `experiments/exp3_reorganized_yolo11n/best.pt`
-导出，解码口径与 `src/models/onnx_infer.py` 完全一致（见下）。
+当前的静态 Demo 用的是**新口径（in_hand / on_ear）**权重：由
+`experiments/exp6_phone_usage_yolo11s/best.pt`（干净数据训练，40 轮）导出，
+解码口径与 `src/models/onnx_infer.py` 完全一致（见下）。
+
+> **2026-10-02 换模型说明**：此前网页版跑的是 exp3（`People using cellphone` + `cellphone` 两类），
+> 但它训练/验证集存在**同源标注污染**（大量"人脸被标成手机"），实测会把人脸判成手机
+> （真实负样本误报 67.7%）。换用 exp6 后误报降到 **1.3%**，检测口径变为
+> **手持手机 / 贴耳手机**两种使用状态（原数据集没有"人"的框，故不再输出"人"这一类）。
 
 ---
 
@@ -30,8 +36,8 @@ docs/demo/
 ├── app.js                      # 预处理 + 推理 + 解码 + NMS + 渲染（与 Python 参考实现对齐）
 ├── style.css
 ├── model/
-│   └── phone-yolo11n.onnx      # 10.1 MB，fp32；导出方式见 src/models/export_onnx.py
-├── samples/                    # 示例图（Roboflow Smart School v5，CC BY 4.0）
+│   └── phone-usage-yolo11s.onnx # 36.2 MB，fp32；导出方式见 src/models/export_onnx.py
+├── samples/                    # 示例图（phone-usage 数据集 test split，CC BY 4.0）
 ├── selftest.json               # 自检基准：Python 侧算出的检测框（由 gen_demo_fixtures.py 生成）
 └── vendor/ort/                 # onnxruntime-web 本地副本（**不走 CDN**，避免网络依赖）
 ```
@@ -52,7 +58,7 @@ python -m http.server 8080 --directory docs
 
 | URL | 作用 |
 |:--|:--|
-| `?sample=sample-classroom.jpg` | 直接加载某张示例图并跑一次推理 |
+| `?sample=sample-in-hand.jpg` | 直接加载某张示例图并跑一次推理 |
 | `?selftest=1` | 用固定图片跑一遍，与 `selftest.json` 的 Python 基准逐框比对，结果写进 `#selftest-result` |
 
 ---
@@ -86,8 +92,8 @@ python -m pytest tests/test_webdemo.py tests/test_onnx_parity.py -v
 ```bash
 # 1) 从训练权重导出 ONNX（imgsz=640 / opset=13 / 关闭内置 NMS；脚本默认值即为此，无需额外传参）
 python -m src.models.export_onnx \
-    --weights experiments/exp3_reorganized_yolo11n/best.pt \
-    --out docs/demo/model/phone-yolo11n.onnx
+    --weights experiments/exp6_phone_usage_yolo11s/best.pt \
+    --out docs/demo/model/phone-usage-yolo11s.onnx
 
 # 2) 重新生成示例图与自检基准
 python -m src.models.gen_demo_fixtures

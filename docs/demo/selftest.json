@@ -1,270 +1,200 @@
 {
-  "model": "phone-yolo11n.onnx",
+  "model": "phone-usage-yolo11s.onnx",
+  "preset": "phone-usage",
   "classes": [
-    "People using cellphone",
-    "cellphone"
+    "in_hand",
+    "on_ear"
   ],
   "conf": 0.25,
   "iou": 0.7,
   "iouTolerance": 0.85,
-  "note": "基准值由 Python 参考实现（src/models/onnx_infer.py）在导出的 ONNX 上生成；浏览器自检必须复现出同样的框（IoU ≥ iouTolerance）。",
+  "note": "基准值由 Python 参考实现（src/models/onnx_infer.py）在导出的 ONNX 上生成；浏览器自检必须复现出同样的框（IoU ≥ iouTolerance）。示例图来源：Roboflow/COCO 派生 phone-usage 数据集（CC BY 4.0），test split。",
   "models": [
     {
-      "id": "n-fp32",
+      "id": "s-fp32",
       "cases": [
         {
-          "image": "sample-classroom.jpg",
-          "source": "valid/image173_jpg.rf.027cfcf16eea2c29c3c242bbfd870cda.jpg（Roboflow Smart School v5, CC BY 4.0）",
+          "image": "sample-in-hand.jpg",
+          "source": "Roboflow/COCO 派生 phone-usage 数据集（CC BY 4.0），test split：test/cvat_test_video03_frame_000134.png",
           "size": [
-            640,
-            640
+            900,
+            506
           ],
           "conf": 0.25,
           "iou": 0.7,
           "counts": {
-            "People using cellphone": 0,
-            "cellphone": 4
+            "in_hand": 1,
+            "on_ear": 2
           },
           "boxes": [
             {
               "xyxy": [
-                489.42,
-                93.42,
-                510.04,
-                140.8
+                273.9,
+                260.06,
+                296.78,
+                280.39
               ],
-              "conf": 0.4633,
-              "cls_id": 1,
-              "cls_name": "cellphone"
-            },
-            {
-              "xyxy": [
-                278.98,
-                85.08,
-                292.61,
-                106.67
-              ],
-              "conf": 0.3618,
-              "cls_id": 1,
-              "cls_name": "cellphone"
-            },
-            {
-              "xyxy": [
-                398.87,
-                75.02,
-                410.61,
-                92.01
-              ],
-              "conf": 0.3339,
-              "cls_id": 1,
-              "cls_name": "cellphone"
-            },
-            {
-              "xyxy": [
-                375.4,
-                76.96,
-                387.02,
-                98.16
-              ],
-              "conf": 0.3146,
-              "cls_id": 1,
-              "cls_name": "cellphone"
-            }
-          ]
-        },
-        {
-          "image": "sample-classroom-2.jpg",
-          "source": "test/image35_jpg.rf.3a3eaabbe52f24b868e71a3887ad5ac9.jpg（Roboflow Smart School v5, CC BY 4.0）",
-          "size": [
-            640,
-            640
-          ],
-          "conf": 0.25,
-          "iou": 0.7,
-          "counts": {
-            "People using cellphone": 0,
-            "cellphone": 3
-          },
-          "boxes": [
-            {
-              "xyxy": [
-                293.49,
-                48.51,
-                305.15,
-                71.16
-              ],
-              "conf": 0.3579,
-              "cls_id": 1,
-              "cls_name": "cellphone"
-            },
-            {
-              "xyxy": [
-                275.03,
-                73.81,
-                287.33,
-                95.74
-              ],
-              "conf": 0.3184,
-              "cls_id": 1,
-              "cls_name": "cellphone"
-            },
-            {
-              "xyxy": [
-                348.17,
-                73.54,
-                363.12,
-                104.36
-              ],
-              "conf": 0.272,
-              "cls_id": 1,
-              "cls_name": "cellphone"
-            }
-          ]
-        },
-        {
-          "image": "sample-corridor.jpg",
-          "source": "train/image31_jpg.rf.e4d221a59f3745cb837e5017ce226e4a.jpg（Roboflow Smart School v5, CC BY 4.0）",
-          "size": [
-            640,
-            640
-          ],
-          "conf": 0.25,
-          "iou": 0.7,
-          "counts": {
-            "People using cellphone": 1,
-            "cellphone": 1
-          },
-          "boxes": [
-            {
-              "xyxy": [
-                148.19,
-                179.06,
-                175.82,
-                217.66
-              ],
-              "conf": 0.4951,
+              "conf": 0.8304,
               "cls_id": 0,
-              "cls_name": "People using cellphone"
+              "cls_name": "in_hand"
             },
             {
               "xyxy": [
-                315.47,
-                106.14,
-                327.52,
-                128.55
+                487.71,
+                302.37,
+                519.45,
+                331.24
               ],
-              "conf": 0.3013,
+              "conf": 0.7815,
               "cls_id": 1,
-              "cls_name": "cellphone"
+              "cls_name": "on_ear"
+            },
+            {
+              "xyxy": [
+                695.16,
+                241.78,
+                716.09,
+                268.06
+              ],
+              "conf": 0.7738,
+              "cls_id": 1,
+              "cls_name": "on_ear"
             }
           ]
         },
         {
-          "image": "sample-classroom-wide.jpg",
-          "source": "valid/image173_jpg.rf.027cfcf16eea2c29c3c242bbfd870cda.jpg（Roboflow Smart School v5, CC BY 4.0）",
+          "image": "sample-in-hand-2.jpg",
+          "source": "Roboflow/COCO 派生 phone-usage 数据集（CC BY 4.0），test split：test/cvat_test_video03_frame_000064.png",
           "size": [
-            640,
-            400
+            900,
+            506
           ],
           "conf": 0.25,
           "iou": 0.7,
           "counts": {
-            "People using cellphone": 0,
-            "cellphone": 5
+            "in_hand": 1,
+            "on_ear": 2
           },
           "boxes": [
             {
               "xyxy": [
-                489.53,
-                93.43,
-                509.7,
-                138.68
+                273.99,
+                257.02,
+                295.9,
+                278.21
               ],
-              "conf": 0.5243,
-              "cls_id": 1,
-              "cls_name": "cellphone"
-            },
-            {
-              "xyxy": [
-                279.0,
-                85.0,
-                292.46,
-                106.73
-              ],
-              "conf": 0.3776,
-              "cls_id": 1,
-              "cls_name": "cellphone"
-            },
-            {
-              "xyxy": [
-                375.24,
-                76.67,
-                387.15,
-                98.01
-              ],
-              "conf": 0.3338,
-              "cls_id": 1,
-              "cls_name": "cellphone"
-            },
-            {
-              "xyxy": [
-                398.66,
-                74.99,
-                410.74,
-                92.64
-              ],
-              "conf": 0.3233,
-              "cls_id": 1,
-              "cls_name": "cellphone"
-            },
-            {
-              "xyxy": [
-                313.86,
-                63.79,
-                324.25,
-                84.6
-              ],
-              "conf": 0.2584,
-              "cls_id": 1,
-              "cls_name": "cellphone"
-            }
-          ]
-        },
-        {
-          "image": "sample-corridor-portrait.jpg",
-          "source": "train/image31_jpg.rf.e4d221a59f3745cb837e5017ce226e4a.jpg（Roboflow Smart School v5, CC BY 4.0）",
-          "size": [
-            400,
-            640
-          ],
-          "conf": 0.25,
-          "iou": 0.7,
-          "counts": {
-            "People using cellphone": 1,
-            "cellphone": 1
-          },
-          "boxes": [
-            {
-              "xyxy": [
-                47.3,
-                179.36,
-                74.84,
-                218.23
-              ],
-              "conf": 0.6005,
+              "conf": 0.8207,
               "cls_id": 0,
-              "cls_name": "People using cellphone"
+              "cls_name": "in_hand"
             },
             {
               "xyxy": [
-                214.3,
-                104.4,
-                226.96,
-                127.18
+                498.07,
+                299.24,
+                529.26,
+                329.17
               ],
-              "conf": 0.4149,
+              "conf": 0.8188,
               "cls_id": 1,
-              "cls_name": "cellphone"
+              "cls_name": "on_ear"
+            },
+            {
+              "xyxy": [
+                747.83,
+                240.94,
+                771.41,
+                264.86
+              ],
+              "conf": 0.6854,
+              "cls_id": 1,
+              "cls_name": "on_ear"
+            }
+          ]
+        },
+        {
+          "image": "sample-two-classes.jpg",
+          "source": "Roboflow/COCO 派生 phone-usage 数据集（CC BY 4.0），test split：test/cvat_test_video03_frame_000132.png",
+          "size": [
+            900,
+            506
+          ],
+          "conf": 0.25,
+          "iou": 0.7,
+          "counts": {
+            "in_hand": 1,
+            "on_ear": 2
+          },
+          "boxes": [
+            {
+              "xyxy": [
+                273.95,
+                260.23,
+                296.66,
+                280.43
+              ],
+              "conf": 0.8306,
+              "cls_id": 0,
+              "cls_name": "in_hand"
+            },
+            {
+              "xyxy": [
+                489.88,
+                300.48,
+                520.73,
+                330.8
+              ],
+              "conf": 0.8008,
+              "cls_id": 1,
+              "cls_name": "on_ear"
+            },
+            {
+              "xyxy": [
+                691.62,
+                241.05,
+                712.44,
+                267.59
+              ],
+              "conf": 0.6049,
+              "cls_id": 1,
+              "cls_name": "on_ear"
+            }
+          ]
+        },
+        {
+          "image": "sample-portrait.jpg",
+          "source": "Roboflow/COCO 派生 phone-usage 数据集（CC BY 4.0），test split：test/cvat_test_video03_frame_000110.png",
+          "size": [
+            460,
+            720
+          ],
+          "conf": 0.25,
+          "iou": 0.7,
+          "counts": {
+            "in_hand": 1,
+            "on_ear": 1
+          },
+          "boxes": [
+            {
+              "xyxy": [
+                419.8,
+                272.17,
+                444.2,
+                293.43
+              ],
+              "conf": 0.7313,
+              "cls_id": 0,
+              "cls_name": "in_hand"
+            },
+            {
+              "xyxy": [
+                287.6,
+                424.69,
+                320.63,
+                464.87
+              ],
+              "conf": 0.7125,
+              "cls_id": 1,
+              "cls_name": "on_ear"
             }
           ]
         }

@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>校园手机使用检测 · 浏览器内实时推理</title>
-<meta name="description" content="基于 YOLO11 的校园手机使用检测系统在线 Demo：图片在浏览器本地推理，不上传服务器。检测「使用手机的人」与「手机」两类目标。">
+<title>手机使用检测 · 浏览器内实时推理</title>
+<meta name="description" content="基于 YOLO11 的手机使用检测在线 Demo：图片在浏览器本地推理，不上传服务器。检测「手持手机」与「贴耳手机」两类使用状态。">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -14,7 +14,7 @@
     <div class="brand">
       <span class="logo">📱</span>
       <div>
-        <h1>校园手机使用检测系统</h1>
+        <h1>手机使用检测系统</h1>
         <p class="sub">YOLO11 · 浏览器内实时推理 · 图片不上传服务器</p>
       </div>
     </div>
@@ -34,7 +34,7 @@
     <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="上传图片">
       <div class="dz-icon">⬆️</div>
       <div class="dz-main">点击选择，或把图片拖到这里</div>
-      <div class="dz-hint">支持 JPG / PNG · 建议校园场景 · 图片只在本地处理</div>
+      <div class="dz-hint">支持 JPG / PNG · 建议含手机的画面 · 图片只在本地处理</div>
       <input id="fileInput" type="file" accept="image/*" hidden>
     </div>
 
@@ -57,7 +57,7 @@
     <div class="ctrl">
       <label>类别过滤</label>
       <div class="checks">
-        <label class="chip"><input type="checkbox" id="cls0" checked> 使用手机的人</label>
+        <label class="chip"><input type="checkbox" id="cls0" checked> 手持手机</label>
         <label class="chip"><input type="checkbox" id="cls1" checked> 手机</label>
       </div>
     </div>
@@ -104,7 +104,7 @@
       <ul>
         <li><b>纯前端推理</b>：模型导出为 ONNX，用 onnxruntime-web（WebAssembly）在你的浏览器里执行，<b>没有后端、不需要 API Key</b>。</li>
         <li><b>与 Python 端同口径</b>：letterbox、解码、按类别 NMS 与 <code>src/models/onnx_infer.py</code> 一致，测试用同一批图片逐框比对（IoU ≥ 0.9）。</li>
-        <li><b>模型</b>：YOLO11 在「Smart School v5 + 4 个校园数据集重组（22,879 张）」上训练，验证集 mAP@50 <b>0.729</b>（yolo11n）/ 0.726（yolo11s）。</li>
+        <li><b>模型</b>：YOLO11s 在「phone-usage 数据集（COCO 派生 + 增广，约 2.4 万张）」上训练，检测<b>手持手机（in_hand）</b>与<b>贴耳手机（on_ear）</b>两类使用状态。验证集 <b>Precision 0.825 / Recall 0.352</b>（conf 0.50）；在 300 张真实无手机图上误报率 <b>1.3%</b>（旧模型同条件为 67.7%）。</li>
         <li><b>平台版</b>：同一套模型的 Python/Streamlit 版支持批量与报告导出，见仓库 <code>src/web/app.py</code>。</li>
       </ul>
     </details>
@@ -128,7 +128,7 @@
 
 <footer class="footer">
   <div class="wrap footer-inner">
-    <span>© 2026 wmsisme · 校园手机使用检测系统</span>
+    <span>© 2026 wmsisme · 手机使用检测系统</span>
     <span id="runtimeInfo" class="muted"></span>
   </div>
 </footer>

@@ -21,10 +21,12 @@ import numpy as np
 import pytest
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[1]
-WEIGHTS = REPO_ROOT / "experiments" / "exp3_reorganized_yolo11n" / "best.pt"
-ONNX = REPO_ROOT / "docs" / "demo" / "model" / "phone-yolo11n.onnx"
-IMAGES_DIR = REPO_ROOT / "data_source" / "reorganized_phone_dataset_yolo" / "reorganized_dataset" / "val" / "images"
-NAMES = ["People using cellphone", "cellphone"]
+# 2026-10-02 起静态 Demo 用 exp6（新口径 in_hand/on_ear，干净数据训练）导出的 ONNX；
+# 一致性测试必须跟着换，否则会静默 skip（假通过）。
+WEIGHTS = REPO_ROOT / "experiments" / "exp6_phone_usage_yolo11s" / "best.pt"
+ONNX = REPO_ROOT / "docs" / "demo" / "model" / "phone-usage-yolo11s.onnx"
+IMAGES_DIR = REPO_ROOT / "手机数据集" / "phone_usage_split" / "images" / "val"
+NAMES = ["in_hand", "on_ear"]
 N_IMAGES = 8
 
 pytest.importorskip("onnxruntime", reason="需要 onnxruntime")

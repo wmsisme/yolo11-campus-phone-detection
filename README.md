@@ -1,6 +1,12 @@
-# 校园手机使用检测系统
+# 手机使用检测系统
 
-基于 **YOLO11** 的校园场景手机使用行为检测系统。上传校园场景图片，自动检测画面中**使用手机的人**和**手机**的位置，并生成检测统计报告（可导出 Markdown）。
+基于 **YOLO11** 的手机使用检测系统。上传图片，自动检测画面中**正在被使用的手机**（**手持** `in_hand` / **贴耳** `on_ear` 两种使用状态），并生成检测统计报告（可导出 Markdown）。
+
+> **口径说明（2026-10-02 起）**：本项目最初按「使用手机的人 + 手机」两类设计，但可用的干净标注数据
+> 只有"手机本体"的位置（**没有"人"的框**），且原有的重组数据集被查出**标注污染**
+> （大量"人脸被标成手机"，模型会把脸判成手机，真实负样本误报 67.7%）。
+> 因此改为检测**使用状态**：`in_hand`（手持手机）/ `on_ear`（贴耳手机）——
+> **框出手机即代表"这里有人在用手机"**，但不会圈出整个人。换用干净数据后误报降到 **1.3%**。
 
 > 🚀 **在线 Demo（点开即用，无需安装）**：<https://wmsisme.github.io/yolo11-campus-phone-detection/demo/>
 > 纯前端推理 —— 模型在你的浏览器里跑（onnxruntime-web / WebAssembly），**图片不上传服务器、不需要 API Key**。
@@ -74,13 +80,14 @@ streamlit run src/web/app.py
 │   ├── exp0_yolo11n_baseline/
 │   ├── exp1_yolo11s_augment/
 │   ├── exp2_yolo11m_hyperparams/
-│   ├── exp3_reorganized_yolo11n/     ← 静态 Demo 用的模型（mAP@50 0.729）
-│   ├── exp4_reorganized_yolo11s/     ← 推荐模型（mAP@50 0.726）
-│   └── exp5_reorganized_yolo11m/
+│   ├── exp3_reorganized_yolo11n/     ← 旧口径（标注污染，已不再用于 Demo）
+│   ├── exp4_reorganized_yolo11s/     ← 旧口径（同上）
+│   ├── exp5_reorganized_yolo11m/
+│   └── exp6_phone_usage_yolo11s/     ← **当前静态 Demo 用的模型**（新口径 in_hand/on_ear）
 ├── docs/
 │   ├── demo/                     # 纯前端静态 Demo（GitHub Pages 发布源）
 │   │   ├── index.html / app.js / style.css
-│   │   ├── model/phone-yolo11n.onnx   # 10.1 MB，浏览器直接下载运行
+│   │   ├── model/phone-usage-yolo11s.onnx  # 36.2 MB，浏览器直接下载运行
 │   │   ├── samples/              # 示例图（Roboflow Smart School v5，CC BY 4.0）
 │   │   ├── selftest.json         # 自检基准（由 Python 参考实现生成）
 │   │   └── vendor/ort/           # onnxruntime-web 本地副本（不依赖 CDN）
@@ -155,8 +162,8 @@ python -m http.server 8080 --directory docs
 导出模型与生成自检基准：
 
 ```bash
-python -m src.models.export_onnx --weights experiments/exp3_reorganized_yolo11n/best.pt \
-    --out docs/demo/model/phone-yolo11n.onnx
+python -m src.models.export_onnx --weights experiments/exp6_phone_usage_yolo11s/best.pt \
+    --out docs/demo/model/phone-usage-yolo11s.onnx
 python -m src.models.gen_demo_fixtures
 ```
 

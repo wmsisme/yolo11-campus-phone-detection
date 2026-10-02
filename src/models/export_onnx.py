@@ -10,15 +10,15 @@ onnxruntime-web 在浏览器里直接跑模型。这就要求权重以 ONNX 格�
 
     # 导出 fp32（与 PyTorch 结果一致，yolo11n 实测约 10.1 MB）
     python -m src.models.export_onnx \
-        --weights experiments/exp3_reorganized_yolo11n/best.pt \
-        --out docs/demo/model/phone-yolo11n.onnx
+        --weights experiments/exp6_phone_usage_yolo11s/best.pt \
+        --out docs/demo/model/phone-usage-yolo11s.onnx
 
     # 额外产出一份静态量化 int8 版本（体积约 1/4，用于弱网/移动端）
     # ⚠️ 2026-09-30 实测：**本项目的 YOLO11 模型量化后分类头失效**，脚本会自检并丢弃
     #    不合格产物（返回码 3），详见 docs/exec-plans/tech-debt-tracker.md。
     python -m src.models.export_onnx \
-        --weights experiments/exp3_reorganized_yolo11n/best.pt \
-        --out docs/demo/model/phone-yolo11n.onnx --int8 \
+        --weights experiments/exp6_phone_usage_yolo11s/best.pt \
+        --out docs/demo/model/phone-usage-yolo11s.onnx --int8 \
         --calib-dir data_source/reorganized_phone_dataset_yolo/reorganized_dataset/val/images
 
 约定（前端 `docs/demo/app.js` 依赖这些约定）：

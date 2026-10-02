@@ -24,32 +24,34 @@
   const NUM_ANCHORS = 8400;
   const MAX_DET = 300;
 
+  // 类别：与导出模型的 names 顺序**必须一致**（权重自带 {0: in_hand, 1: on_ear}）。
+  // ⚠️ 换模型口径时，这里和 MODEL 一起改——标签与模型输出不符会变成"框对了、名字错了"的静默错位。
   const CLASSES = [
-    { id: 0, name: '使用手机的人', en: 'People using cellphone', color: '#1f6feb' },
-    { id: 1, name: '手机', en: 'cellphone', color: '#e8590c' },
+    { id: 0, name: '手持手机', en: 'in_hand', color: '#e8590c' },
+    { id: 1, name: '贴耳手机', en: 'on_ear', color: '#1f6feb' },
   ];
 
   // 模型清单：体积见仓库 docs/demo/model/，切换时按需下载（浏览器自动缓存）
-  // 目前网页版只放 YOLO11n：yolo11s 的 ONNX 有 36 MB，公网首屏代价过大；
-  // int8 静态量化会打坏这个模型的分类头（类别分数恒为 0，实测 4 种量化配置全部如此，
-  // 详见 docs/exec-plans/tech-debt-tracker.md），所以不发行量化版本。
+  // 当前网页版放的是**新口径（in_hand/on_ear）**的 yolo11s 权重，由干净数据训练：
+  // 真实负样本误报从旧模型的 67.7% 降到 1.3%（conf≥0.5），"把人脸当手机"已修复。
+  // 注：int8 静态量化会打坏这个模型的分类头（类别分数恒为 0，实测 4 种量化配置全部如此，
+  // 详见 docs/exec-plans/tech-debt-tracker.md #012），所以只发行 fp32 版本。
   const MODELS = [
     {
-      id: 'n-fp32',
-      label: 'YOLO11n',
-      note: '10.1 MB · fp32',
-      file: 'model/phone-yolo11n.onnx',
-      metrics: 'mAP@50 0.729 · 早停于 61 epoch',
+      id: 's-fp32',
+      label: 'YOLO11s',
+      note: '36.2 MB · fp32',
+      file: 'model/phone-usage-yolo11s.onnx',
+      metrics: 'P 0.825 / R 0.352 @conf 0.50 · 手持/贴耳两类',
       recommended: true,
     },
   ];
 
   const SAMPLE_FILES = [
-    'sample-classroom.jpg',
-    'sample-classroom-2.jpg',
-    'sample-corridor.jpg',
-    'sample-classroom-wide.jpg',
-    'sample-corridor-portrait.jpg',
+    'sample-in-hand.jpg',
+    'sample-in-hand-2.jpg',
+    'sample-two-classes.jpg',
+    'sample-portrait.jpg',
   ];
 
   // ---------------------------------------------------------------- 全局状态

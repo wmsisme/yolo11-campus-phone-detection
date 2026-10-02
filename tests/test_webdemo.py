@@ -54,7 +54,7 @@ requires_browser = pytest.mark.skipif(
     reason="需要 Node 与 Edge/Chrome 才能跑浏览器内推理测试",
 )
 requires_assets = pytest.mark.skipif(
-    not (DEMO_DIR / "model" / "phone-yolo11n.onnx").is_file()
+    not (DEMO_DIR / "model" / "phone-usage-yolo11s.onnx").is_file()
     or not (DEMO_DIR / "selftest.json").is_file(),
     reason="Demo 产物缺失（先跑 src.models.export_onnx 与 src.models.gen_demo_fixtures）",
 )
@@ -99,7 +99,7 @@ def test_demo_assets_present():
         DEMO_DIR / "index.html",
         DEMO_DIR / "app.js",
         DEMO_DIR / "style.css",
-        DEMO_DIR / "model" / "phone-yolo11n.onnx",
+        DEMO_DIR / "model" / "phone-usage-yolo11s.onnx",
         DEMO_DIR / "selftest.json",
         DEMO_DIR / "vendor" / "ort" / "ort.wasm.min.js",
         DEMO_DIR / "vendor" / "ort" / "ort-wasm-simd-threaded.wasm",
@@ -145,7 +145,7 @@ def test_browser_inference_matches_python_baseline(demo_server):
 @requires_assets
 def test_normal_path_renders_report(demo_server):
     """正常路径（点示例图 → 推理 → 渲染报告）：出结果、有报告、无报错。"""
-    report = _run_probe(demo_server + "?sample=sample-classroom.jpg", "window.__demo", timeout_ms=120000)
+    report = _run_probe(demo_server + "?sample=sample-in-hand.jpg", "window.__demo", timeout_ms=120000)
     assert report["consoleErrors"] == [], f"页面有 JS 报错：{report['consoleErrors']}"
     state = report.get("state") or {}
     assert state.get("ready") is True, f"推理未完成：{state}"
